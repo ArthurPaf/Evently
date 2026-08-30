@@ -1,0 +1,124 @@
+2026-08-30 13:19:06,537 [INFO] === SISTEMA INICIADO E LOGS EM ARQUIVO ATIVADOS ===
+2026-08-30 13:19:36,502 [INFO] HTTP POST /auth/login | Status: 200 | Tempo: 409.70ms
+2026-08-30 13:19:36,696 [INFO] HTTP GET /eventos/ | Status: 200 | Tempo: 13.23ms
+2026-08-30 13:19:40,482 [INFO] Buscando barracas do evento ID 1
+2026-08-30 13:19:40,486 [INFO] HTTP GET /eventos/1/barracas/ | Status: 200 | Tempo: 10.17ms
+2026-08-30 13:19:48,319 [INFO] HTTP POST /eventos/1/barracas/ | Status: 422 | Tempo: 2.45ms
+2026-08-30 13:23:50,602 [INFO] === SISTEMA INICIADO E LOGS EM ARQUIVO ATIVADOS ===
+2026-08-30 13:23:50,940 [INFO] HTTP POST /auth/login | Status: 200 | Tempo: 329.20ms
+2026-08-30 13:24:12,166 [INFO] HTTP POST /auth/login | Status: 200 | Tempo: 307.34ms
+2026-08-30 13:24:12,495 [INFO] HTTP OPTIONS /eventos/ | Status: 200 | Tempo: 0.26ms
+2026-08-30 13:24:12,510 [INFO] HTTP GET /eventos/ | Status: 200 | Tempo: 12.03ms
+2026-08-30 13:24:13,873 [INFO] HTTP OPTIONS /eventos/1/barracas/ | Status: 200 | Tempo: 0.27ms
+2026-08-30 13:24:13,881 [INFO] Buscando barracas do evento ID 1
+2026-08-30 13:24:13,887 [INFO] HTTP GET /eventos/1/barracas/ | Status: 200 | Tempo: 11.26ms
+2026-08-30 13:24:25,495 [INFO] HTTP OPTIONS /eventos/1/barracas/ | Status: 200 | Tempo: 0.23ms
+2026-08-30 13:24:25,500 [ERROR] Erro 422 de Validação na rota /eventos/1/barracas/: [{'type': 'missing', 'loc': ('body', 'evento_id'), 'msg': 'Field required', 'input': {'nome': 'espetinho', 'tipo': 'comida'}}, {'type': 'missing', 'loc': ('body', 'responsavel_id'), 'msg': 'Field required', 'input': {'nome': 'espetinho', 'tipo': 'comida'}}]
+2026-08-30 13:24:25,500 [INFO] HTTP POST /eventos/1/barracas/ | Status: 422 | Tempo: 2.64ms
+2026-08-30 13:26:42,250 [INFO] === SISTEMA INICIADO E LOGS EM ARQUIVO ATIVADOS ===
+2026-08-30 13:27:27,936 [INFO] HTTP POST /auth/login | Status: 200 | Tempo: 386.96ms
+2026-08-30 13:27:28,211 [INFO] HTTP GET /eventos/ | Status: 200 | Tempo: 12.65ms
+2026-08-30 13:27:29,071 [INFO] Buscando barracas do evento ID 1
+2026-08-30 13:27:29,076 [INFO] HTTP GET /eventos/1/barracas/ | Status: 200 | Tempo: 11.33ms
+2026-08-30 13:30:54,824 [INFO] HTTP POST /auth/login | Status: 200 | Tempo: 377.97ms
+2026-08-30 13:30:55,012 [INFO] HTTP OPTIONS /eventos/ | Status: 200 | Tempo: 0.24ms
+2026-08-30 13:30:55,019 [INFO] HTTP GET /eventos/ | Status: 200 | Tempo: 3.44ms
+2026-08-30 13:30:55,981 [INFO] HTTP OPTIONS /eventos/1/barracas/ | Status: 200 | Tempo: 0.35ms
+2026-08-30 13:30:55,986 [INFO] Buscando barracas do evento ID 1
+2026-08-30 13:30:55,989 [INFO] HTTP GET /eventos/1/barracas/ | Status: 200 | Tempo: 4.69ms
+2026-08-30 13:31:08,401 [INFO] HTTP OPTIONS /eventos/1/barracas/ | Status: 200 | Tempo: 0.31ms
+2026-08-30 13:31:08,405 [INFO] Tentando salvar barraca 'espetinho' para o evento ID 1
+2026-08-30 13:31:08,407 [ERROR] ERRO CRÍTICO ao salvar barraca no banco: 'tipo' is an invalid keyword argument for Barraca
+Traceback (most recent call last):
+  File "C:\Users\arthu\OneDrive\Área de Trabalho\Nova pasta\flutter_application\backend\app\daos\barraca_dao.py", line 11, in criar_barraca
+    db_barraca = Barraca(
+        nome=barraca.nome,
+        tipo=barraca.tipo,
+        evento_id=evento_id
+    )
+  File "<string>", line 4, in __init__
+  File "C:\Users\arthu\OneDrive\Área de Trabalho\Nova pasta\flutter_application\backend\venv\Lib\site-packages\sqlalchemy\orm\state.py", line 596, in _initialize_instance
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\arthu\OneDrive\Área de Trabalho\Nova pasta\flutter_application\backend\venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 122, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "C:\Users\arthu\OneDrive\Área de Trabalho\Nova pasta\flutter_application\backend\venv\Lib\site-packages\sqlalchemy\orm\state.py", line 594, in _initialize_instance
+    manager.original_init(*mixed[1:], **kwargs)
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\arthu\OneDrive\Área de Trabalho\Nova pasta\flutter_application\backend\venv\Lib\site-packages\sqlalchemy\orm\decl_base.py", line 2193, in _declarative_constructor
+    raise TypeError(
+        "%r is an invalid keyword argument for %s" % (k, cls_.__name__)
+    )
+TypeError: 'tipo' is an invalid keyword argument for Barraca
+2026-08-30 13:33:17,257 [INFO] === SISTEMA INICIADO E LOGS EM ARQUIVO ATIVADOS ===
+2026-08-30 13:33:17,778 [INFO] HTTP POST /auth/login | Status: 200 | Tempo: 512.11ms
+2026-08-30 13:33:17,966 [INFO] HTTP GET /eventos/ | Status: 200 | Tempo: 12.96ms
+2026-08-30 13:33:21,444 [INFO] Buscando barracas do evento ID 1
+2026-08-30 13:35:11,424 [INFO] === SISTEMA INICIADO E LOGS EM ARQUIVO ATIVADOS ===
+2026-08-30 13:36:43,238 [INFO] === SISTEMA INICIADO E LOGS EM ARQUIVO ATIVADOS ===
+2026-08-30 13:37:04,593 [INFO] HTTP POST /auth/login | Status: 200 | Tempo: 381.13ms
+2026-08-30 13:37:04,977 [INFO] HTTP GET /eventos/ | Status: 200 | Tempo: 13.56ms
+2026-08-30 13:37:05,952 [INFO] Buscando barracas do evento ID 1
+2026-08-30 13:37:05,957 [INFO] HTTP GET /eventos/1/barracas/ | Status: 200 | Tempo: 11.59ms
+2026-08-30 13:37:16,805 [INFO] Tentando salvar barraca 'espetinho' para o evento ID 1
+2026-08-30 13:37:16,817 [INFO] Barraca 'espetinho' salva no banco com ID 1!
+2026-08-30 13:43:31,620 [INFO] === SISTEMA INICIADO E LOGS EM ARQUIVO ATIVADOS ===
+2026-08-30 13:46:52,040 [INFO] === SISTEMA INICIADO E LOGS EM ARQUIVO ATIVADOS ===
+2026-08-30 13:47:14,060 [INFO] HTTP POST /auth/login | Status: 200 | Tempo: 403.14ms
+2026-08-30 13:47:14,371 [INFO] HTTP OPTIONS /eventos/ | Status: 200 | Tempo: 0.32ms
+2026-08-30 13:47:14,387 [INFO] HTTP GET /eventos/ | Status: 200 | Tempo: 13.50ms
+2026-08-30 13:47:15,821 [INFO] HTTP OPTIONS /eventos/1/barracas/ | Status: 200 | Tempo: 0.20ms
+2026-08-30 13:47:15,829 [INFO] Buscando barracas do evento ID 1
+2026-08-30 13:50:06,579 [INFO] === SISTEMA INICIADO E LOGS EM ARQUIVO ATIVADOS ===
+2026-08-30 14:26:45,273 [INFO] === SISTEMA INICIADO E LOGS EM ARQUIVO ATIVADOS ===
+2026-08-30 14:29:51,839 [INFO] === SISTEMA INICIADO E LOGS EM ARQUIVO ATIVADOS ===
+2026-08-30 14:34:12,778 [INFO] === SISTEMA INICIADO E LOGS EM ARQUIVO ATIVADOS ===
+2026-08-30 14:36:52,885 [INFO] === SISTEMA INICIADO E LOGS EM ARQUIVO ATIVADOS ===
+2026-08-30 14:37:18,237 [INFO] === SISTEMA INICIADO E LOGS EM ARQUIVO ATIVADOS ===
+2026-08-30 14:38:37,097 [INFO] === SISTEMA INICIADO E LOGS EM ARQUIVO ATIVADOS ===
+2026-08-30 14:38:52,749 [INFO] === SISTEMA INICIADO E LOGS EM ARQUIVO ATIVADOS ===
+2026-08-30 14:39:56,489 [INFO] === SISTEMA INICIADO E LOGS EM ARQUIVO ATIVADOS ===
+2026-08-30 14:41:03,240 [INFO] === SISTEMA INICIADO E LOGS EM ARQUIVO ATIVADOS ===
+2026-08-30 14:49:22,276 [INFO] === SISTEMA INICIADO E LOGS EM ARQUIVO ATIVADOS ===
+2026-08-30 14:50:40,724 [INFO] === SISTEMA INICIADO E LOGS EM ARQUIVO ATIVADOS ===
+2026-08-30 14:53:32,098 [INFO] === SISTEMA INICIADO E LOGS EM ARQUIVO ATIVADOS ===
+2026-08-30 14:53:53,794 [INFO] === SISTEMA INICIADO E LOGS EM ARQUIVO ATIVADOS ===
+2026-08-30 14:54:39,202 [INFO] HTTP POST /auth/login | Status: 200 | Tempo: 361.52ms
+2026-08-30 14:54:39,522 [INFO] HTTP OPTIONS /eventos/ | Status: 200 | Tempo: 0.28ms
+2026-08-30 14:54:39,539 [INFO] HTTP GET /eventos/ | Status: 200 | Tempo: 14.50ms
+2026-08-30 14:54:44,042 [INFO] HTTP OPTIONS /eventos/1/barracas/ | Status: 200 | Tempo: 0.25ms
+2026-08-30 14:54:44,051 [INFO] Buscando barracas do evento ID 1
+2026-08-30 14:56:06,969 [INFO] === SISTEMA INICIADO E LOGS EM ARQUIVO ATIVADOS ===
+2026-08-30 14:56:46,418 [INFO] HTTP POST /auth/login | Status: 200 | Tempo: 393.36ms
+2026-08-30 14:56:46,642 [INFO] HTTP GET /eventos/ | Status: 200 | Tempo: 13.27ms
+2026-08-30 14:56:47,564 [INFO] Buscando barracas do evento ID 1
+2026-08-30 14:56:47,571 [INFO] HTTP GET /eventos/1/barracas/ | Status: 200 | Tempo: 13.24ms
+2026-08-30 14:57:02,734 [INFO] HTTP OPTIONS /eventos/1/barracas/ | Status: 200 | Tempo: 0.24ms
+2026-08-30 15:00:49,953 [INFO] === SISTEMA INICIADO E LOGS EM ARQUIVO ATIVADOS ===
+2026-08-30 15:01:04,132 [INFO] HTTP POST /auth/login | Status: 200 | Tempo: 534.66ms
+2026-08-30 15:01:04,615 [INFO] HTTP GET /eventos/ | Status: 200 | Tempo: 12.44ms
+2026-08-30 15:01:05,495 [INFO] Buscando barracas do evento ID 1
+2026-08-30 15:01:05,502 [INFO] HTTP GET /eventos/1/barracas/ | Status: 200 | Tempo: 12.85ms
+2026-08-30 15:01:12,056 [INFO] Tentando salvar barraca 'teste' para o evento ID 1
+2026-08-30 15:01:12,066 [INFO] Barraca 'teste' salva no banco com ID 2!
+2026-08-30 15:01:12,068 [INFO] HTTP POST /eventos/1/barracas/ | Status: 200 | Tempo: 14.49ms
+2026-08-30 15:01:12,105 [INFO] Buscando barracas do evento ID 1
+2026-08-30 15:01:12,108 [INFO] HTTP GET /eventos/1/barracas/ | Status: 200 | Tempo: 5.34ms
+2026-08-30 15:01:25,421 [INFO] Buscando barracas do evento ID 1
+2026-08-30 15:01:25,423 [INFO] HTTP GET /eventos/1/barracas/ | Status: 200 | Tempo: 4.60ms
+2026-08-30 15:01:29,746 [INFO] Buscando barracas do evento ID 1
+2026-08-30 15:01:29,749 [INFO] HTTP GET /eventos/1/barracas/ | Status: 200 | Tempo: 4.46ms
+2026-08-30 15:01:31,192 [INFO] Buscando barracas do evento ID 1
+2026-08-30 15:01:31,194 [INFO] HTTP GET /eventos/1/barracas/ | Status: 200 | Tempo: 3.98ms
+2026-08-30 15:01:32,613 [INFO] Buscando barracas do evento ID 1
+2026-08-30 15:01:32,616 [INFO] HTTP GET /eventos/1/barracas/ | Status: 200 | Tempo: 4.18ms
+2026-08-30 15:01:33,742 [INFO] Buscando barracas do evento ID 1
+2026-08-30 15:01:33,745 [INFO] HTTP GET /eventos/1/barracas/ | Status: 200 | Tempo: 4.18ms
+2026-08-30 15:01:34,865 [INFO] Buscando barracas do evento ID 1
+2026-08-30 15:01:34,868 [INFO] HTTP GET /eventos/1/barracas/ | Status: 200 | Tempo: 4.34ms
+2026-08-30 15:05:03,602 [INFO] Buscando barracas do evento ID 1
+2026-08-30 15:05:03,605 [INFO] HTTP GET /eventos/1/barracas/ | Status: 200 | Tempo: 5.14ms
+2026-08-30 15:05:05,140 [INFO] Buscando barracas do evento ID 1
+2026-08-30 15:05:05,143 [INFO] HTTP GET /eventos/1/barracas/ | Status: 200 | Tempo: 4.02ms
+2026-08-30 15:05:12,529 [INFO] Buscando barracas do evento ID 1
+2026-08-30 15:05:12,534 [INFO] HTTP GET /eventos/1/barracas/ | Status: 200 | Tempo: 6.22ms

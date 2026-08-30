@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../controllers/evento_controller.dart';
 import '../models/evento_model.dart';
 import 'criar_evento_view.dart';
+import 'detalhes_evento_view.dart';
 
 class PainelOrganizadorView extends StatefulWidget {
   @override
@@ -44,11 +45,22 @@ class _PainelOrganizadorViewState extends State<PainelOrganizadorView> {
             itemBuilder: (context, index) {
               final evento = snapshot.data![index];
               return Card(
-                margin: EdgeInsets.all(8.0),
+                margin: const EdgeInsets.all(8.0),
                 child: ListTile(
-                  title: Text(evento.nome, style: TextStyle(fontWeight: FontWeight.bold)),
+                  title: Text(
+                    evento.nome, 
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
                   subtitle: Text('${evento.dataInicio} até ${evento.dataFim}'),
-                  trailing: Icon(Icons.storefront), // Ícone indicando que haverá barracas
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => DetalhesEventoView(evento: evento),
+                      ),
+                    );
+                  },
                 ),
               );
             },

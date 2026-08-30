@@ -1,13 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app import models, schemas, security
+from app import security
 from fastapi.security import OAuth2PasswordRequestForm
+
+from app import models
+from app.schemas.usuario_schema import UserCreate, UserResponse, Token
 
 router = APIRouter(prefix="/auth", tags=["Autenticação"])
 
-@router.post("/registrar", response_model=schemas.UserResponse)
-def registrar_usuario(user: schemas.UserCreate, db: Session = Depends(get_db)):
+@router.post("/registrar", response_model=UserResponse)
+def registrar_usuario(user: UserCreate, db: Session = Depends(get_db)):
     # Verifica se o email já existe
     db_user = db.query(models.User).filter(models.User.email == user.email).first()
     if db_user:
@@ -27,7 +30,7 @@ def registrar_usuario(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db.refresh(novo_usuario)
     return novo_usuario
 
-@router.post("/login", response_model=schemas.Token)
+@router.post("/login", response_model=Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     # Busca usuário
     user = db.query(models.User).filter(models.User.email == form_data.username).first()
