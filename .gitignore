@@ -46,3 +46,9 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Ambiente virtual e cache do Python (Backend)
+backend/venv/
+backend/__pycache__/
+backend/.env
+*.sqlite3
