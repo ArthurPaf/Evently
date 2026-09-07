@@ -2,13 +2,14 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/evento_model.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class EventoController {
   static const String baseUrl = 'http://127.0.0.1:8000';
+  final _storage = const FlutterSecureStorage(); // troca aqui
 
   Future<List<Evento>> buscarEventos() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token') ?? '';
+    final token = await _storage.read(key: 'jwt_token') ?? ''; // troca aqui
 
     final response = await http.get(
       Uri.parse('$baseUrl/eventos/'),
@@ -27,8 +28,7 @@ class EventoController {
   }
 
   Future<bool> criarEvento(String nome, String dataInicio, String dataFim) async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token') ?? '';
+    final token = await _storage.read(key: 'jwt_token') ?? '';
 
     final response = await http.post(
       Uri.parse('$baseUrl/eventos/'),
@@ -45,4 +45,18 @@ class EventoController {
 
     return response.statusCode == 200;
   }
+
+  Future<bool> excluirEvento(int id) async {
+  final token = await _storage.read(key: 'jwt_token') ?? ''; // troca aqui
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/eventos/'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+  return response.statusCode == 200 || response.statusCode == 204;
+}
 }

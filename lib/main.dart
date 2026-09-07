@@ -1,19 +1,25 @@
 import 'package:flutter/material.dart';
-import 'screens/login_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_application/screens/login_screen.dart';
 
 void main() {
-  runApp(EventlyApp());
+  runApp(
+    // O ProviderScope armazena o estado de todos os providers
+    const ProviderScope(
+      child: MyApp(),
+    ),
+  );
 }
 
-class EventlyApp extends StatelessWidget {
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Evently',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: LoginScreen(), // Define a tela de login como a primeira
+      theme: ThemeData(primarySwatch: Colors.blue),
+      home: LoginScreen(),
     );
   }
 }

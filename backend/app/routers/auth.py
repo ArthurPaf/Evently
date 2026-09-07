@@ -12,13 +12,13 @@ router = APIRouter(prefix="/auth", tags=["Autenticação"])
 @router.post("/registrar", response_model=UserResponse)
 def registrar_usuario(user: UserCreate, db: Session = Depends(get_db)):
     # Verifica se o email já existe
-    db_user = db.query(models.User).filter(models.User.email == user.email).first()
+    db_user = db.query(models.Usuario).filter(models.Usuario.email == user.email).first()
     if db_user:
         raise HTTPException(status_code=400, detail="Email já cadastrado.")
     
     # Cria o usuário com a senha criptografada
     hashed_password = security.get_password_hash(user.senha)
-    novo_usuario = models.User(
+    novo_usuario = models.Usuario(
         nome=user.nome,
         email=user.email,
         senha_hash=hashed_password,
@@ -30,21 +30,30 @@ def registrar_usuario(user: UserCreate, db: Session = Depends(get_db)):
     db.refresh(novo_usuario)
     return novo_usuario
 
-@router.post("/login", response_model=Token)
-def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    # Busca usuário
-    user = db.query(models.User).filter(models.User.email == form_data.username).first()
+@router.post("/login")
+def login(
+    form_data: OAuth2PasswordRequestForm = Depends(), 
+    db: Session = Depends(get_db)
+):
+    # Altere de models.User para models.Usuario
+    user = db.query(models.Usuario).filter(models.Usuario.email == form_data.username).first()
     
-    # Valida usuário e senha
     if not user or not security.verify_password(form_data.password, user.senha_hash):
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Email ou senha incorretos",
-            headers={"WWW-Authenticate": "Bearer"},
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="E-mail ou senha incorretos."
         )
-    
-    # Gera o Token JWT com id e perfil no payload
-    access_token = security.create_access_token(
-        data={"sub": user.email, "id": user.id, "perfil": user.perfil}
-    )
+
+    # Gere o token normalmente usando os dados do usuario
+    access_token = security.create_access_token(data={"id": user.id, "perfil": user.perfil.value, "sub": str(user.id)})
     return {"access_token": access_token, "token_type": "bearer"}
+
+@router.get("/me", response_model=UserResponse)
+def obter_meu_perfil(
+    usuario: dict = Depends(security.get_usuario_atual),
+    db: Session = Depends(get_db)
+):
+    user = db.query(models.Usuario).filter(models.Usuario.id == usuario["id"]).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    return user

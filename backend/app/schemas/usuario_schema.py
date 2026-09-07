@@ -1,7 +1,9 @@
 from pydantic import BaseModel, EmailStr
 from app.models import TipoPerfil
-from datetime import date
 from pydantic import BaseModel
+from typing import Optional
+from pydantic import BaseModel
+from datetime import datetime
 from typing import Optional
 
 
@@ -26,3 +28,39 @@ class UserResponse(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str
+
+class EventoCreate(BaseModel):
+    nome: str
+    local: Optional[str] = None
+    data_inicio: datetime
+    data_fim: datetime
+
+    class Config:
+        from_attributes = True
+
+class EventoSchema(BaseModel):
+    id: int
+    nome: str
+    local: Optional[str] = None
+    data_inicio: Union[date, datetime, str]
+    data_fim: Union[date, datetime, str]
+    organizador_id: int
+
+    class Config:
+        from_attributes = True
+
+class VendedorResponse(BaseModel):
+    id: int
+    nome: str
+    email: str
+
+    class Config:
+        from_attributes = True
+
+class AdministradorResponse(BaseModel):
+    id: int
+    nome: str
+    email: str
+ 
+    class Config:
+        from_attributes = True
