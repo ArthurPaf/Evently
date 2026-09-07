@@ -1232,3 +1232,97 @@ TypeError: 'responsavel_id' is an invalid keyword argument for Barraca
 2026-09-06 21:02:16,867 [INFO] Buscando barracas do evento ID 6
 2026-09-06 21:02:16,869 [INFO] HTTP GET /eventos/6/barracas/ | Status: 200 | Tempo: 2.81ms
 2026-09-06 21:02:49,531 [INFO] HTTP GET /administrador/meus-eventos | Status: 401 | Tempo: 1.16ms
+2026-09-07 14:21:54,703 [INFO] === SISTEMA INICIADO E LOGS EM ARQUIVO ATIVADOS ===
+2026-09-07 14:23:47,280 [INFO] HTTP POST /auth/login | Status: 200 | Tempo: 572.18ms
+2026-09-07 14:23:47,300 [INFO] HTTP OPTIONS /auth/me | Status: 200 | Tempo: 0.32ms
+2026-09-07 14:23:47,310 [INFO] HTTP GET /auth/me | Status: 200 | Tempo: 7.82ms
+2026-09-07 14:23:47,362 [INFO] HTTP OPTIONS /eventos/ | Status: 200 | Tempo: 0.23ms
+2026-09-07 14:23:47,407 [INFO] HTTP GET /eventos/ | Status: 200 | Tempo: 42.06ms
+2026-09-07 14:24:00,233 [INFO] HTTP OPTIONS /eventos/2/barracas/ | Status: 200 | Tempo: 0.24ms
+2026-09-07 14:24:00,258 [INFO] Buscando barracas do evento ID 2
+2026-09-07 14:24:00,271 [INFO] HTTP GET /eventos/2/barracas/ | Status: 200 | Tempo: 32.97ms
+2026-09-07 14:24:09,606 [INFO] HTTP OPTIONS /admin/vendedores | Status: 200 | Tempo: 0.26ms
+2026-09-07 14:24:09,627 [INFO] HTTP GET /admin/vendedores | Status: 200 | Tempo: 18.68ms
+2026-09-07 14:24:27,536 [INFO] Tentando salvar barraca '33' para o evento ID 2
+2026-09-07 14:24:27,559 [INFO] Barraca '33' salva no banco com ID 8!
+2026-09-07 14:24:27,568 [INFO] HTTP POST /eventos/2/barracas/ | Status: 201 | Tempo: 37.36ms
+2026-09-07 14:24:27,603 [INFO] Buscando barracas do evento ID 2
+2026-09-07 14:24:27,609 [INFO] HTTP GET /eventos/2/barracas/ | Status: 200 | Tempo: 7.77ms
+2026-09-07 14:24:30,429 [INFO] HTTP OPTIONS /barracas/8/produtos/ | Status: 200 | Tempo: 0.25ms
+2026-09-07 14:24:30,463 [INFO] HTTP GET /barracas/8/produtos/ | Status: 200 | Tempo: 31.94ms
+2026-09-07 14:24:48,776 [INFO] HTTP POST /barracas/8/produtos/ | Status: 201 | Tempo: 13.36ms
+2026-09-07 14:24:48,791 [INFO] HTTP GET /barracas/8/produtos/ | Status: 200 | Tempo: 3.24ms
+2026-09-07 14:25:16,878 [INFO] HTTP OPTIONS /admin/administradores | Status: 200 | Tempo: 0.24ms
+2026-09-07 14:25:16,890 [INFO] HTTP GET /admin/administradores | Status: 200 | Tempo: 4.13ms
+2026-09-07 14:25:36,614 [INFO] HTTP OPTIONS /eventos/2 | Status: 200 | Tempo: 0.24ms
+2026-09-07 14:25:36,635 [INFO] HTTP PUT /eventos/2 | Status: 200 | Tempo: 19.83ms
+2026-09-07 14:25:36,695 [INFO] HTTP GET /eventos/ | Status: 200 | Tempo: 8.89ms
+2026-09-07 14:26:03,836 [INFO] HTTP GET /eventos/ | Status: 401 | Tempo: 1.56ms
+2026-09-07 14:26:04,059 [INFO] HTTP GET /eventos/ | Status: 401 | Tempo: 1.32ms
+2026-09-07 14:26:18,654 [INFO] HTTP POST /auth/login | Status: 200 | Tempo: 354.11ms
+2026-09-07 14:26:18,662 [INFO] HTTP GET /auth/me | Status: 200 | Tempo: 4.16ms
+2026-09-07 14:26:18,695 [INFO] HTTP OPTIONS /vendedor/meus-eventos | Status: 200 | Tempo: 0.20ms
+2026-09-07 14:26:18,720 [INFO] HTTP GET /vendedor/meus-eventos | Status: 200 | Tempo: 22.61ms
+2026-09-07 14:26:28,489 [INFO] HTTP OPTIONS /vendedor/eventos/2/barracas | Status: 200 | Tempo: 0.24ms
+2026-09-07 14:26:28,508 [INFO] HTTP GET /vendedor/eventos/2/barracas | Status: 200 | Tempo: 13.45ms
+2026-09-07 14:26:33,682 [INFO] HTTP OPTIONS /barracas/3/produtos/ | Status: 200 | Tempo: 0.25ms
+2026-09-07 14:26:33,739 [INFO] HTTP GET /barracas/3/produtos/ | Status: 200 | Tempo: 4.32ms
+2026-09-07 14:26:39,125 [INFO] HTTP GET /vendedor/meus-eventos | Status: 401 | Tempo: 1.30ms
+2026-09-07 14:26:39,339 [INFO] HTTP GET /vendedor/meus-eventos | Status: 401 | Tempo: 1.85ms
+2026-09-07 14:26:52,715 [INFO] HTTP POST /auth/login | Status: 200 | Tempo: 355.12ms
+2026-09-07 14:26:52,723 [INFO] HTTP GET /auth/me | Status: 200 | Tempo: 3.56ms
+2026-09-07 14:26:52,752 [INFO] HTTP OPTIONS /administrador/meus-eventos | Status: 200 | Tempo: 0.21ms
+2026-09-07 14:26:52,774 [INFO] HTTP GET /administrador/meus-eventos | Status: 200 | Tempo: 20.21ms
+2026-09-07 14:27:05,429 [INFO] HTTP OPTIONS /eventos/6/barracas/ | Status: 200 | Tempo: 0.24ms
+2026-09-07 14:27:05,434 [INFO] Buscando barracas do evento ID 6
+2026-09-07 14:27:05,436 [INFO] HTTP GET /eventos/6/barracas/ | Status: 200 | Tempo: 3.44ms
+2026-09-07 14:27:09,724 [INFO] Buscando barracas do evento ID 2
+2026-09-07 14:27:09,731 [INFO] HTTP GET /eventos/2/barracas/ | Status: 200 | Tempo: 8.06ms
+2026-09-07 14:27:26,060 [INFO] HTTP GET /administrador/meus-eventos | Status: 401 | Tempo: 1.29ms
+2026-09-07 14:27:26,273 [INFO] HTTP GET /administrador/meus-eventos | Status: 401 | Tempo: 1.81ms
+2026-09-07 20:08:02,898 [INFO] === SISTEMA INICIADO E LOGS EM ARQUIVO ATIVADOS ===
+2026-09-07 20:09:55,042 [INFO] HTTP POST /auth/login | Status: 200 | Tempo: 531.35ms
+2026-09-07 20:09:55,053 [INFO] HTTP OPTIONS /auth/me | Status: 200 | Tempo: 0.27ms
+2026-09-07 20:09:55,073 [INFO] HTTP GET /auth/me | Status: 200 | Tempo: 14.11ms
+2026-09-07 20:09:55,162 [INFO] HTTP OPTIONS /eventos/ | Status: 200 | Tempo: 0.21ms
+2026-09-07 20:09:55,231 [INFO] HTTP GET /eventos/ | Status: 200 | Tempo: 35.95ms
+2026-09-07 20:10:08,248 [INFO] HTTP GET /eventos/ | Status: 401 | Tempo: 1.41ms
+2026-09-07 20:10:08,497 [INFO] HTTP GET /eventos/ | Status: 401 | Tempo: 2.38ms
+2026-09-07 20:10:18,613 [INFO] HTTP POST /auth/login | Status: 200 | Tempo: 322.35ms
+2026-09-07 20:10:18,621 [INFO] HTTP GET /auth/me | Status: 200 | Tempo: 3.74ms
+2026-09-07 20:10:18,657 [INFO] HTTP OPTIONS /vendedor/meus-eventos | Status: 200 | Tempo: 0.27ms
+2026-09-07 20:10:18,688 [INFO] HTTP GET /vendedor/meus-eventos | Status: 200 | Tempo: 28.60ms
+2026-09-07 20:10:19,868 [INFO] HTTP OPTIONS /vendedor/eventos/2/barracas | Status: 200 | Tempo: 0.24ms
+2026-09-07 20:10:19,883 [INFO] HTTP GET /vendedor/eventos/2/barracas | Status: 200 | Tempo: 12.33ms
+2026-09-07 20:10:21,151 [INFO] HTTP OPTIONS /barracas/3/produtos/ | Status: 200 | Tempo: 0.26ms
+2026-09-07 20:10:21,186 [INFO] HTTP GET /barracas/3/produtos/ | Status: 200 | Tempo: 33.45ms
+2026-09-07 20:10:27,047 [INFO] HTTP OPTIONS /barracas/7/produtos/ | Status: 200 | Tempo: 0.24ms
+2026-09-07 20:10:27,053 [INFO] HTTP GET /barracas/7/produtos/ | Status: 200 | Tempo: 4.26ms
+2026-09-07 20:10:28,073 [INFO] HTTP OPTIONS /barracas/8/produtos/ | Status: 200 | Tempo: 0.25ms
+2026-09-07 20:10:28,080 [INFO] HTTP GET /barracas/8/produtos/ | Status: 200 | Tempo: 4.70ms
+2026-09-07 20:24:15,114 [INFO] === SISTEMA INICIADO E LOGS EM ARQUIVO ATIVADOS ===
+2026-09-07 20:38:50,343 [INFO] === SISTEMA INICIADO E LOGS EM ARQUIVO ATIVADOS ===
+2026-09-07 20:41:02,365 [INFO] HTTP POST /auth/login | Status: 400 | Tempo: 615.68ms
+2026-09-07 20:41:04,997 [INFO] HTTP POST /auth/login | Status: 200 | Tempo: 368.46ms
+2026-09-07 20:41:05,005 [INFO] HTTP OPTIONS /auth/me | Status: 200 | Tempo: 0.32ms
+2026-09-07 20:41:05,016 [INFO] HTTP GET /auth/me | Status: 200 | Tempo: 6.16ms
+2026-09-07 20:41:05,120 [INFO] HTTP OPTIONS /vendedor/meus-eventos | Status: 200 | Tempo: 0.22ms
+2026-09-07 20:41:05,148 [INFO] HTTP GET /vendedor/meus-eventos | Status: 200 | Tempo: 25.22ms
+2026-09-07 20:41:06,154 [INFO] HTTP OPTIONS /vendedor/eventos/2/barracas | Status: 200 | Tempo: 0.24ms
+2026-09-07 20:41:06,168 [INFO] HTTP GET /vendedor/eventos/2/barracas | Status: 200 | Tempo: 11.15ms
+2026-09-07 20:41:07,008 [INFO] HTTP OPTIONS /barracas/3/produtos/ | Status: 200 | Tempo: 0.23ms
+2026-09-07 20:41:07,053 [INFO] HTTP GET /barracas/3/produtos/ | Status: 200 | Tempo: 32.82ms
+2026-09-07 20:44:59,835 [INFO] HTTP GET /vendedor/meus-eventos | Status: 401 | Tempo: 1.50ms
+2026-09-07 20:45:00,071 [INFO] HTTP GET /vendedor/meus-eventos | Status: 401 | Tempo: 1.80ms
+2026-09-07 20:45:06,381 [INFO] HTTP POST /auth/login | Status: 200 | Tempo: 590.54ms
+2026-09-07 20:45:06,394 [INFO] HTTP GET /auth/me | Status: 200 | Tempo: 4.07ms
+2026-09-07 20:45:06,438 [INFO] HTTP OPTIONS /eventos/ | Status: 200 | Tempo: 0.31ms
+2026-09-07 20:45:06,451 [INFO] HTTP GET /eventos/ | Status: 200 | Tempo: 10.97ms
+2026-09-07 20:45:16,185 [INFO] HTTP OPTIONS /eventos/6/barracas/ | Status: 200 | Tempo: 0.20ms
+2026-09-07 20:45:16,190 [INFO] Buscando barracas do evento ID 6
+2026-09-07 20:45:16,194 [INFO] HTTP GET /eventos/6/barracas/ | Status: 200 | Tempo: 5.77ms
+2026-09-07 20:45:17,697 [INFO] HTTP OPTIONS /eventos/5/barracas/ | Status: 200 | Tempo: 0.36ms
+2026-09-07 20:45:17,700 [INFO] Buscando barracas do evento ID 5
+2026-09-07 20:45:17,703 [INFO] HTTP GET /eventos/5/barracas/ | Status: 200 | Tempo: 3.36ms
+2026-09-07 20:45:25,619 [INFO] HTTP GET /eventos/ | Status: 401 | Tempo: 1.42ms
+2026-09-07 20:45:25,892 [INFO] HTTP GET /eventos/ | Status: 401 | Tempo: 3.51ms

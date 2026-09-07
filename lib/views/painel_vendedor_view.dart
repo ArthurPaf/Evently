@@ -7,6 +7,8 @@ import '../providers/auth_provider.dart';
 import '../providers/vendedor_barraca_provider.dart';
 import '../providers/produto_provider.dart';
 import '../screens/login_screen.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
+import '../providers/transacao_provider.dart';
 
 // --- TELA 1: EVENTOS DO VENDEDOR ---
 class PainelVendedorView extends ConsumerWidget {
@@ -222,65 +224,218 @@ class BarracasDoVendedorView extends ConsumerWidget {
 }
 
 // --- TELA 3: PRODUTOS DA BARRACA (somente leitura) ---
-class ProdutosDaBarracaVendedorView extends ConsumerWidget {
+class ProdutosDaBarracaVendedorView extends ConsumerStatefulWidget {
   final Barraca barraca;
-
+ 
   const ProdutosDaBarracaVendedorView({super.key, required this.barraca});
-
+ 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final produtosAsync = ref.watch(produtosProvider(barraca.id!));
-
+  ConsumerState<ProdutosDaBarracaVendedorView> createState() =>
+      _ProdutosDaBarracaVendedorViewState();
+}
+ 
+class _ProdutosDaBarracaVendedorViewState
+    extends ConsumerState<ProdutosDaBarracaVendedorView> {
+  // produtoId -> quantidade selecionada
+  final Map<int, int> _carrinho = {};
+ 
+  double _calcularTotal(List produtos) {
+    double total = 0.0;
+    for (final produto in produtos) {
+      final qtd = _carrinho[produto.id] ?? 0;
+      total += qtd * produto.preco;
+    }
+    return total;
+  }
+ 
+  void _abrirCheckout(double total) {
+    final codigoController = TextEditingController();
+    bool mostrarScanner = false;
+    bool carregando = false;
+ 
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (modalContext) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            Future<void> confirmar() async {
+              final codigo = codigoController.text.trim();
+              if (codigo.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Escaneie ou digite o código do cliente.')),
+                );
+                return;
+              }
+ 
+              setModalState(() => carregando = true);
+ 
+              final itens = _carrinho.entries
+                  .where((e) => e.value > 0)
+                  .map((e) => {'produto_id': e.key, 'quantidade': e.value})
+                  .toList();
+ 
+              final resultado = await ref.read(transacaoServiceProvider).realizarVenda(
+                    barracaId: widget.barraca.id!,
+                    codigoIdentificador: codigo,
+                    itens: itens,
+                  );
+ 
+              setModalState(() => carregando = false);
+ 
+              final bool sucesso = resultado['sucesso'] ?? false;
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(resultado['mensagem'] ?? 'Erro desconhecido.'),
+                    backgroundColor: sucesso ? Colors.green : Colors.red,
+                  ),
+                );
+              }
+ 
+              if (sucesso) {
+                Navigator.pop(modalContext);
+                setState(() => _carrinho.clear());
+              }
+            }
+ 
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(modalContext).viewInsets.bottom + 16,
+                top: 16, left: 16, right: 16,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('Total: R\$ ${total.toStringAsFixed(2)}',
+                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 16),
+                  if (mostrarScanner)
+                    SizedBox(
+                      height: 250,
+                      child: MobileScanner(
+                        onDetect: (capture) {
+                          final valor = capture.barcodes.first.rawValue;
+                          if (valor != null) {
+                            setModalState(() {
+                              codigoController.text = valor;
+                              mostrarScanner = false;
+                            });
+                          }
+                        },
+                      ),
+                    )
+                  else
+                    OutlinedButton.icon(
+                      onPressed: () => setModalState(() => mostrarScanner = true),
+                      icon: const Icon(Icons.qr_code_scanner),
+                      label: const Text('Escanear QR Code do cliente'),
+                    ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: codigoController,
+                    textCapitalization: TextCapitalization.characters,
+                    decoration: const InputDecoration(
+                      labelText: 'Código do cliente',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: carregando ? null : confirmar,
+                      child: carregando
+                          ? const SizedBox(
+                              width: 20, height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            )
+                          : const Text('Confirmar Venda'),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+ 
+  @override
+  Widget build(BuildContext context) {
+    final produtosAsync = ref.watch(produtosProvider(widget.barraca.id!));
+ 
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
-        title: Text(barraca.nome),
+        title: Text(widget.barraca.nome),
       ),
       body: produtosAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Erro: $err')),
         data: (produtos) {
           if (produtos.isEmpty) {
-            return const Center(
-              child: Text('Nenhum produto cadastrado para esta barraca.'),
-            );
+            return const Center(child: Text('Nenhum produto cadastrado para esta barraca.'));
           }
-
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: produtos.length,
-            itemBuilder: (context, index) {
-              final produto = produtos[index];
-              return Card(
-                elevation: 1,
-                margin: const EdgeInsets.symmetric(vertical: 6),
-                child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: Theme.of(context)
-                        .colorScheme
-                        .primary
-                        .withOpacity(0.1),
-                    child: Icon(
-                      Icons.sell_outlined,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                  ),
-                  title: Text(
-                    produto.nome,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Text(
-                    'R\$ ${produto.preco.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: Colors.green,
-                    ),
-                  ),
-                  // Sem onLongPress/editar/excluir: vendedor só visualiza.
+ 
+          final total = _calcularTotal(produtos);
+ 
+          return Column(
+            children: [
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: produtos.length,
+                  itemBuilder: (context, index) {
+                    final produto = produtos[index];
+                    final qtd = _carrinho[produto.id] ?? 0;
+ 
+                    return Card(
+                      margin: const EdgeInsets.symmetric(vertical: 6),
+                      child: ListTile(
+                        title: Text(produto.nome, style: const TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: Text('R\$ ${produto.preco.toStringAsFixed(2)}',
+                            style: const TextStyle(color: Colors.green, fontWeight: FontWeight.w600)),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.remove_circle_outline),
+                              onPressed: qtd > 0
+                                  ? () => setState(() => _carrinho[produto.id!] = qtd - 1)
+                                  : null,
+                            ),
+                            Text('$qtd', style: const TextStyle(fontSize: 16)),
+                            IconButton(
+                              icon: const Icon(Icons.add_circle_outline),
+                              onPressed: () => setState(() => _carrinho[produto.id!] = qtd + 1),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
+              ),
+              if (total > 0)
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: () => _abrirCheckout(total),
+                      child: Text('Finalizar Venda - R\$ ${total.toStringAsFixed(2)}'),
+                    ),
+                  ),
+                ),
+            ],
           );
         },
       ),

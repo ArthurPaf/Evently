@@ -48,6 +48,14 @@ def criar_barraca(
     return evento_controller.criar_barraca(db, barraca)
 
 
+@router.get("/publicos", response_model=List[evento_schema.EventoResponse])
+def listar_eventos_publicos(
+    db: Session = Depends(get_db),
+    usuario: dict = Depends(security.get_usuario_atual),  # qualquer perfil logado (inclusive cliente)
+):
+    return db.query(Evento).all()
+
+
 @router.put("/{evento_id}", response_model=evento_schema.EventoResponse)
 def editar_evento(
     evento_id: int,
