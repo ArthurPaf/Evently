@@ -59,6 +59,32 @@ def realizar_recarga(
     return transacao
 
 
+def realizar_recarga_propria(
+    db: Session, cliente_id: int, evento_id: int, valor: float
+) -> Transacao:
+    """
+    Recarga feita pelo próprio cliente (pagamento simulado, sem gateway real).
+    Diferente de realizar_recarga: aqui não precisa de código, pois o
+    cliente está recarregando a própria carteira.
+    """
+    if valor <= 0:
+        raise HTTPException(status_code=400, detail="O valor deve ser maior que zero.")
+
+    carteira, _ = buscar_ou_criar_carteira(db, cliente_id, evento_id)
+    carteira.saldo_digital += valor
+
+    transacao = Transacao(
+        carteira_id=carteira.id,
+        tipo=TipoTransacao.RECARGA,
+        valor_total=valor,
+        realizado_por_id=cliente_id,
+    )
+    db.add(transacao)
+    db.commit()
+    db.refresh(transacao)
+    return transacao
+
+
 def realizar_venda(
     db: Session, barraca_id: int, dados: VendaCreate, vendedor_id: int
 ) -> Transacao:

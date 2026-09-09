@@ -1,127 +1,188 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../models/evento_model.dart';
 import '../providers/auth_provider.dart';
 import '../providers/cliente_provider.dart';
-import '../screens/login_screen.dart';
+import '../views/cliente_entry_view.dart';
 
-// --- TELA 1: LISTA DE EVENTOS DISPONÍVEIS ---
-class PainelClienteView extends ConsumerWidget {
-  const PainelClienteView({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authProvider);
-    final eventosAsync = ref.watch(eventosPublicosProvider);
-
-    final nomeUsuario = authState.nomeUsuario ?? 'Cliente';
-    final emailUsuario = authState.emailUsuario ?? '';
-
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
-        title: const Text('Eventos'),
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
-        ),
-      ),
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            UserAccountsDrawerHeader(
-              accountName: Text(nomeUsuario),
-              accountEmail: Text(emailUsuario),
-              currentAccountPicture: const CircleAvatar(
-                backgroundColor: Colors.white,
-                child: Icon(Icons.person, size: 35, color: Colors.deepPurple),
-              ),
-              decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary),
-            ),
-            ListTile(
-              leading: const Icon(Icons.logout, color: Colors.red),
-              title: const Text('Sair', style: TextStyle(color: Colors.red)),
-              onTap: () async {
-                Navigator.pop(context);
-                await ref.read(authProvider.notifier).logout();
-                if (context.mounted) {
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (_) => const LoginScreen()),
-                    (route) => false,
-                  );
-                }
-              },
-            ),
-          ],
-        ),
-      ),
-      body: eventosAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text('Erro ao carregar: $err')),
-        data: (eventos) {
-          if (eventos.isEmpty) {
-            return const Center(child: Text('Nenhum evento disponível no momento.'));
-          }
-          return ListView.builder(
-            padding: const EdgeInsets.all(12),
-            itemCount: eventos.length,
-            itemBuilder: (context, index) {
-              final evento = eventos[index];
-              return Card(
-                margin: const EdgeInsets.symmetric(vertical: 6),
-                child: ListTile(
-                  leading: const Icon(Icons.event),
-                  title: Text(evento.nome, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text(evento.local.isEmpty ? 'Sem local definido' : evento.local),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => MinhaCarteiraView(evento: evento)),
-                    );
-                  },
-                ),
-              );
-            },
-          );
-        },
-      ),
-    );
-  }
-}
-
-// --- TELA 2: CARTEIRA DIGITAL (QR Code + saldo + extrato) ---
-class MinhaCarteiraView extends ConsumerWidget {
+// --- CARTEIRA DIGITAL (QR Code + saldo + extrato) ---
+class MinhaCarteiraView extends ConsumerStatefulWidget {
   final Evento evento;
 
   const MinhaCarteiraView({super.key, required this.evento});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final carteiraAsync = ref.watch(carteiraProvider(evento.id));
+  ConsumerState<MinhaCarteiraView> createState() => _MinhaCarteiraViewState();
+}
+
+class _MinhaCarteiraViewState extends ConsumerState<MinhaCarteiraView> {
+  Timer? _timer;
+  int? _carteiraId;
+
+  @override
+  void initState() {
+    super.initState();
+    // Atualiza saldo/extrato automaticamente a cada 3 segundos, sem precisar
+    // recarregar a página — cobre recargas/vendas feitas em outro dispositivo.
+    _timer = Timer.periodic(const Duration(seconds: 3), (_) => _atualizar());
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _atualizar() {
+    if (!mounted) return;
+    ref.invalidate(carteiraProvider(widget.evento.id));
+    if (_carteiraId != null) {
+      ref.invalidate(extratoProvider(_carteiraId!));
+    }
+  }
+
+  void _sair() async {
+    await ref.read(authProvider.notifier).logout();
+    if (context.mounted) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => ClienteEntryView(eventoId: widget.evento.id)),
+      );
+    }
+  }
+
+  void _abrirModalAdicionarCredito() {
+    final valorController = TextEditingController();
+    bool carregando = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (modalContext) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            Future<void> confirmar() async {
+              final valorText = valorController.text.replaceAll(',', '.').trim();
+              final valor = double.tryParse(valorText) ?? 0.0;
+
+              if (valor <= 0) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Informe um valor válido.')),
+                );
+                return;
+              }
+
+              setModalState(() => carregando = true);
+
+              final resultado = await ref.read(clienteServiceProvider).recarregarPropriaCarteira(
+                    eventoId: widget.evento.id,
+                    valor: valor,
+                  );
+
+              setModalState(() => carregando = false);
+
+              final bool sucesso = resultado['sucesso'] ?? false;
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(resultado['mensagem'] ?? 'Erro desconhecido.'),
+                    backgroundColor: sucesso ? Colors.green : Colors.red,
+                  ),
+                );
+              }
+
+              if (sucesso) {
+                Navigator.pop(modalContext);
+                _atualizar(); // reflete o novo saldo na hora, sem esperar o próximo ciclo
+              }
+            }
+
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(modalContext).viewInsets.bottom + 16,
+                top: 16, left: 16, right: 16,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('Adicionar Créditos',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Pagamento simulado — nenhum valor real será cobrado.',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: valorController,
+                    autofocus: true,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(
+                      labelText: 'Valor (R\$)',
+                      prefixIcon: Icon(Icons.attach_money),
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: carregando ? null : confirmar,
+                      child: carregando
+                          ? const SizedBox(
+                              width: 20, height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            )
+                          : const Text('Confirmar Pagamento'),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final carteiraAsync = ref.watch(carteiraProvider(widget.evento.id));
+
+    // Guarda o id da carteira assim que ela chega, pra o timer conseguir
+    // invalidar o extrato certo nos próximos ciclos.
+    ref.listen(carteiraProvider(widget.evento.id), (previous, next) {
+      next.whenData((carteira) => _carteiraId = carteira.id);
+    });
 
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
-        title: Text(evento.nome),
+        title: Text(widget.evento.nome),
+        automaticallyImplyLeading: false, // sem botão de voltar: aqui é a única tela do cliente
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Sair',
+            onPressed: _sair,
+          ),
+        ],
       ),
       body: carteiraAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, _) => Center(child: Text('Erro: $err')),
         data: (carteira) {
+          _carteiraId = carteira.id;
           final extratoAsync = ref.watch(extratoProvider(carteira.id));
 
           return RefreshIndicator(
-            onRefresh: () async {
-              ref.invalidate(carteiraProvider(evento.id));
-              ref.invalidate(extratoProvider(carteira.id));
-            },
+            onRefresh: () async => _atualizar(),
             child: ListView(
               padding: const EdgeInsets.all(20),
               children: [
@@ -139,6 +200,15 @@ class MinhaCarteiraView extends ConsumerWidget {
                         Text(
                           'R\$ ${carteira.saldoDigital.toStringAsFixed(2)}',
                           style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.green),
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: _abrirModalAdicionarCredito,
+                            icon: const Icon(Icons.add_card),
+                            label: const Text('Adicionar Créditos'),
+                          ),
                         ),
                         const SizedBox(height: 24),
                         QrImageView(

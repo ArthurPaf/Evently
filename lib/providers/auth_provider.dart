@@ -8,6 +8,7 @@ import 'barraca_provider.dart';
 import 'vendedor_barraca_provider.dart';
 import 'produto_provider.dart';
 import 'administrador_provider.dart';
+import 'cliente_provider.dart';
 
 // --- FUNÇÃO AUXILIAR: decodifica o payload de um JWT sem pacotes externos ---
 // Um JWT tem 3 partes separadas por ".": header.payload.signature
@@ -148,6 +149,8 @@ class AuthNotifier extends Notifier<AuthState> {
         ref.invalidate(meusEventosVendedorProvider);
         ref.invalidate(produtosProvider);
         ref.invalidate(meusEventosAdministradorProvider);
+        ref.invalidate(carteiraProvider);
+        ref.invalidate(extratoProvider);
 
         return true;
       } else {
@@ -199,6 +202,8 @@ class AuthNotifier extends Notifier<AuthState> {
     ref.invalidate(meusEventosVendedorProvider);
     ref.invalidate(produtosProvider);
     ref.invalidate(meusEventosAdministradorProvider);
+    ref.invalidate(carteiraProvider);
+    ref.invalidate(extratoProvider);
   }
 }
 

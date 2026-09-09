@@ -59,6 +59,31 @@ class ClienteService {
     }
     throw Exception('Falha ao carregar extrato (${response.statusCode})');
   }
+
+  // Pagamento simulado: o próprio cliente adiciona crédito à carteira
+  Future<Map<String, dynamic>> recarregarPropriaCarteira({
+    required int eventoId,
+    required double valor,
+  }) async {
+    final url = Uri.parse('$_baseUrl/clientes/eventos/$eventoId/recarregar');
+    final headers = await _headers();
+
+    try {
+      final response = await _client.post(
+        url,
+        headers: headers,
+        body: jsonEncode({'valor': valor}),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {'sucesso': true, 'mensagem': 'Crédito adicionado com sucesso!'};
+      }
+      final body = jsonDecode(response.body);
+      return {'sucesso': false, 'mensagem': body['detail'] ?? 'Erro ao adicionar crédito.'};
+    } catch (e) {
+      return {'sucesso': false, 'mensagem': 'Falha de conexão com o servidor.'};
+    }
+  }
 }
 
 final clienteServiceProvider = Provider<ClienteService>((ref) {

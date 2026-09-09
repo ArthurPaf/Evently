@@ -10,6 +10,8 @@ import 'cadastrar_vendedor_view.dart';
 import '../providers/administrador_provider.dart';
 import '../models/administrador_model.dart';
 import 'cadastrar_administrador_view.dart';
+import 'dashboard_view.dart';
+import 'recarga_view.dart';
 
 class PainelOrganizadorView extends ConsumerWidget {
   const PainelOrganizadorView({super.key});
@@ -70,6 +72,39 @@ class PainelOrganizadorView extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
+              ListTile(
+                leading: const Icon(Icons.dashboard_outlined, color: Colors.deepPurple),
+                title: const Text('Dashboard Financeiro'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => DashboardView(
+                        eventoId: evento.id,
+                        nomeEvento: evento.nome,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.qr_code_scanner, color: Colors.teal),
+                title: const Text('Recarregar Saldo de Cliente'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => RecargaView(
+                        eventoId: evento.id,
+                        nomeEvento: evento.nome,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const Divider(),
               ListTile(
                 leading: const Icon(Icons.edit_outlined, color: Colors.blue),
                 title: const Text('Editar Evento'),
@@ -138,237 +173,237 @@ class PainelOrganizadorView extends ConsumerWidget {
 
   // --- CONFIRMAÇÃO E EDIÇÃO NA API COM CALENDÁRIO ---
   void _confirmarEdicao(BuildContext context, WidgetRef ref, Evento evento) {
-  final nomeController = TextEditingController(text: evento.nome);
-  final localController = TextEditingController(text: evento.local);
- 
-  String dataInicioBR = _converterParaBR(evento.dataInicio);
-  String dataFimBR = _converterParaBR(evento.dataFim);
- 
-  // Pré-marca os administradores já vinculados a esse evento
-  final List<int> administradoresSelecionados =
-      evento.administradores.map((a) => a.id).toList();
- 
-  showDialog(
-    context: context,
-    builder: (ctx) {
-      return StatefulBuilder(
-        builder: (context, setDialogState) {
-          Future<void> selecionarData(bool isDataInicio) async {
-            FocusManager.instance.primaryFocus?.unfocus();
- 
-            final dataAtual = _parseDataBR(isDataInicio ? dataInicioBR : dataFimBR);
- 
-            final DateTime? dataSelecionada = await showDatePicker(
-              context: context,
-              initialDate: dataAtual,
-              firstDate: DateTime(2020),
-              lastDate: DateTime(2030),
-            );
- 
-            if (dataSelecionada != null) {
-              final ano = dataSelecionada.year;
-              final mes = dataSelecionada.month.toString().padLeft(2, '0');
-              final dia = dataSelecionada.day.toString().padLeft(2, '0');
-              final dataFormatadaBR = '$dia/$mes/$ano';
- 
-              setDialogState(() {
-                if (isDataInicio) {
-                  dataInicioBR = dataFormatadaBR;
-                } else {
-                  dataFimBR = dataFormatadaBR;
-                }
-              });
+    final nomeController = TextEditingController(text: evento.nome);
+    final localController = TextEditingController(text: evento.local);
+
+    String dataInicioBR = _converterParaBR(evento.dataInicio);
+    String dataFimBR = _converterParaBR(evento.dataFim);
+
+    // Pré-marca os administradores já vinculados a esse evento
+    final List<int> administradoresSelecionados =
+        evento.administradores.map((a) => a.id).toList();
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            Future<void> selecionarData(bool isDataInicio) async {
+              FocusManager.instance.primaryFocus?.unfocus();
+
+              final dataAtual = _parseDataBR(isDataInicio ? dataInicioBR : dataFimBR);
+
+              final DateTime? dataSelecionada = await showDatePicker(
+                context: context,
+                initialDate: dataAtual,
+                firstDate: DateTime(2020),
+                lastDate: DateTime(2030),
+              );
+
+              if (dataSelecionada != null) {
+                final ano = dataSelecionada.year;
+                final mes = dataSelecionada.month.toString().padLeft(2, '0');
+                final dia = dataSelecionada.day.toString().padLeft(2, '0');
+                final dataFormatadaBR = '$dia/$mes/$ano';
+
+                setDialogState(() {
+                  if (isDataInicio) {
+                    dataInicioBR = dataFormatadaBR;
+                  } else {
+                    dataFimBR = dataFormatadaBR;
+                  }
+                });
+              }
             }
-          }
- 
-          return AlertDialog(
-            title: const Text('Editar Evento'),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: nomeController,
-                    decoration: const InputDecoration(
-                      labelText: 'Nome do Evento',
-                      prefixIcon: Icon(Icons.event_note),
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: localController,
-                    decoration: const InputDecoration(
-                      labelText: 'Local do Evento',
-                      prefixIcon: Icon(Icons.location_on_outlined),
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  InkWell(
-                    onTap: () => selecionarData(true),
-                    borderRadius: BorderRadius.circular(4),
-                    child: InputDecorator(
+
+            return AlertDialog(
+              title: const Text('Editar Evento'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: nomeController,
                       decoration: const InputDecoration(
-                        labelText: 'Data de Início',
-                        prefixIcon: Icon(Icons.calendar_month_outlined),
+                        labelText: 'Nome do Evento',
+                        prefixIcon: Icon(Icons.event_note),
                         border: OutlineInputBorder(),
                       ),
-                      child: Text(
-                        dataInicioBR.isEmpty
-                            ? 'Selecione a data de início'
-                            : dataInicioBR,
-                        style: TextStyle(
-                          fontSize: 15,
-                          color: dataInicioBR.isEmpty
-                              ? Colors.grey[600]
-                              : Colors.black87,
-                        ),
-                      ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  InkWell(
-                    onTap: () => selecionarData(false),
-                    borderRadius: BorderRadius.circular(4),
-                    child: InputDecorator(
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: localController,
                       decoration: const InputDecoration(
-                        labelText: 'Data de Término',
-                        prefixIcon: Icon(Icons.calendar_month_outlined),
+                        labelText: 'Local do Evento',
+                        prefixIcon: Icon(Icons.location_on_outlined),
                         border: OutlineInputBorder(),
                       ),
-                      child: Text(
-                        dataFimBR.isEmpty
-                            ? 'Selecione a data de término'
-                            : dataFimBR,
-                        style: TextStyle(
-                          fontSize: 15,
-                          color: dataFimBR.isEmpty
-                              ? Colors.grey[600]
-                              : Colors.black87,
-                        ),
-                      ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      'Administradores deste evento',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
+                    const SizedBox(height: 12),
+                    InkWell(
+                      onTap: () => selecionarData(true),
+                      borderRadius: BorderRadius.circular(4),
+                      child: InputDecorator(
+                        decoration: const InputDecoration(
+                          labelText: 'Data de Início',
+                          prefixIcon: Icon(Icons.calendar_month_outlined),
+                          border: OutlineInputBorder(),
+                        ),
+                        child: Text(
+                          dataInicioBR.isEmpty
+                              ? 'Selecione a data de início'
+                              : dataInicioBR,
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: dataInicioBR.isEmpty
+                                ? Colors.grey[600]
+                                : Colors.black87,
                           ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Consumer(
-                    builder: (context, ref, _) {
-                      final administradoresAsync = ref.watch(administradoresProvider);
- 
-                      return administradoresAsync.when(
-                        loading: () => const Padding(
-                          padding: EdgeInsets.all(16.0),
-                          child: Center(child: CircularProgressIndicator()),
                         ),
-                        error: (err, _) => Text('Erro ao carregar administradores: $err'),
-                        data: (administradores) {
-                          if (administradores.isEmpty) {
-                            return const Text(
-                              'Nenhum administrador cadastrado ainda.',
-                              style: TextStyle(color: Colors.grey),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    InkWell(
+                      onTap: () => selecionarData(false),
+                      borderRadius: BorderRadius.circular(4),
+                      child: InputDecorator(
+                        decoration: const InputDecoration(
+                          labelText: 'Data de Término',
+                          prefixIcon: Icon(Icons.calendar_month_outlined),
+                          border: OutlineInputBorder(),
+                        ),
+                        child: Text(
+                          dataFimBR.isEmpty
+                              ? 'Selecione a data de término'
+                              : dataFimBR,
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: dataFimBR.isEmpty
+                                ? Colors.grey[600]
+                                : Colors.black87,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Administradores deste evento',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final administradoresAsync = ref.watch(administradoresProvider);
+
+                        return administradoresAsync.when(
+                          loading: () => const Padding(
+                            padding: EdgeInsets.all(16.0),
+                            child: Center(child: CircularProgressIndicator()),
+                          ),
+                          error: (err, _) => Text('Erro ao carregar administradores: $err'),
+                          data: (administradores) {
+                            if (administradores.isEmpty) {
+                              return const Text(
+                                'Nenhum administrador cadastrado ainda.',
+                                style: TextStyle(color: Colors.grey),
+                              );
+                            }
+
+                            return Container(
+                              constraints: const BoxConstraints(maxHeight: 180),
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey[300]!),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: ListView(
+                                shrinkWrap: true,
+                                children: administradores.map((Administrador a) {
+                                  final selecionado = administradoresSelecionados.contains(a.id);
+                                  return CheckboxListTile(
+                                    dense: true,
+                                    title: Text(a.nome),
+                                    subtitle: Text(a.email),
+                                    value: selecionado,
+                                    onChanged: (marcado) {
+                                      setDialogState(() {
+                                        if (marcado == true) {
+                                          administradoresSelecionados.add(a.id);
+                                        } else {
+                                          administradoresSelecionados.remove(a.id);
+                                        }
+                                      });
+                                    },
+                                  );
+                                }).toList(),
+                              ),
                             );
-                          }
- 
-                          return Container(
-                            constraints: const BoxConstraints(maxHeight: 180),
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey[300]!),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: ListView(
-                              shrinkWrap: true,
-                              children: administradores.map((Administrador a) {
-                                final selecionado = administradoresSelecionados.contains(a.id);
-                                return CheckboxListTile(
-                                  dense: true,
-                                  title: Text(a.nome),
-                                  subtitle: Text(a.email),
-                                  value: selecionado,
-                                  onChanged: (marcado) {
-                                    setDialogState(() {
-                                      if (marcado == true) {
-                                        administradoresSelecionados.add(a.id);
-                                      } else {
-                                        administradoresSelecionados.remove(a.id);
-                                      }
-                                    });
-                                  },
-                                );
-                              }).toList(),
-                            ),
-                          );
-                        },
+                          },
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancelar'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (nomeController.text.isEmpty ||
+                        localController.text.isEmpty ||
+                        dataInicioBR.isEmpty ||
+                        dataFimBR.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Por favor, preencha todos os campos!'),
+                        ),
                       );
-                    },
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancelar'),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  if (nomeController.text.isEmpty ||
-                      localController.text.isEmpty ||
-                      dataInicioBR.isEmpty ||
-                      dataFimBR.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Por favor, preencha todos os campos!'),
-                      ),
+                      return;
+                    }
+
+                    final eventoAtualizado = Evento(
+                      id: evento.id,
+                      nome: nomeController.text.trim(),
+                      local: localController.text.trim(),
+                      dataInicio: _converterParaISO(dataInicioBR),
+                      dataFim: _converterParaISO(dataFimBR),
+                      administradorIds: administradoresSelecionados,
                     );
-                    return;
-                  }
- 
-                  final eventoAtualizado = Evento(
-                    id: evento.id,
-                    nome: nomeController.text.trim(),
-                    local: localController.text.trim(),
-                    dataInicio: _converterParaISO(dataInicioBR),
-                    dataFim: _converterParaISO(dataFimBR),
-                    administradorIds: administradoresSelecionados,
-                  );
- 
-                  Navigator.pop(ctx);
- 
-                  final resultado = await ref
-                      .read(eventosProvider.notifier)
-                      .editarEvento(eventoAtualizado);
- 
-                  if (context.mounted) {
-                    final bool sucesso = resultado['sucesso'] ?? false;
-                    final String mensagem = resultado['mensagem'] ?? 'Erro ao atualizar o evento.';
- 
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(mensagem),
-                        backgroundColor: sucesso ? Colors.green : Colors.red,
-                      ),
-                    );
-                  }
-                },
-                child: const Text('Salvar'),
-              ),
-            ],
-          );
-        },
-      );
-    },
-  );
-}
+
+                    Navigator.pop(ctx);
+
+                    final resultado = await ref
+                        .read(eventosProvider.notifier)
+                        .editarEvento(eventoAtualizado);
+
+                    if (context.mounted) {
+                      final bool sucesso = resultado['sucesso'] ?? false;
+                      final String mensagem = resultado['mensagem'] ?? 'Erro ao atualizar o evento.';
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(mensagem),
+                          backgroundColor: sucesso ? Colors.green : Colors.red,
+                        ),
+                      );
+                    }
+                  },
+                  child: const Text('Salvar'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -417,16 +452,6 @@ class PainelOrganizadorView extends ConsumerWidget {
               onTap: () => Navigator.pop(context),
             ),
             ListTile(
-              leading: const Icon(Icons.dashboard_outlined),
-              title: const Text('Dashboard'),
-              onTap: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Tela de Dashboard em breve!')),
-                );
-              },
-            ),
-            ListTile(
               leading: const Icon(Icons.settings_outlined),
               title: const Text('Configurações'),
               onTap: () {
@@ -448,7 +473,7 @@ class PainelOrganizadorView extends ConsumerWidget {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.person_add_alt_1_outlined),
+              leading: const Icon(Icons.admin_panel_settings_outlined),
               title: const Text('Cadastrar Administrador'),
               onTap: () {
                 Navigator.pop(context);
@@ -493,7 +518,7 @@ class PainelOrganizadorView extends ConsumerWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Gerencie seus eventos.',
+                  'Gerencie seus eventos. Segure um card para ver o dashboard, recarregar saldo, editar ou excluir.',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Colors.grey[600],
                       ),

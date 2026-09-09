@@ -48,6 +48,19 @@ def criar_barraca(
     return evento_controller.criar_barraca(db, barraca)
 
 
+@router.get("/{evento_id}/basico")
+def evento_basico(evento_id: int, db: Session = Depends(get_db)):
+    """
+    Rota pública (sem autenticação) usada na landing page do cliente,
+    acessada por um link direto do tipo /evento/{id}. Retorna só o
+    essencial para exibir antes do login/cadastro.
+    """
+    evento = db.query(Evento).filter(Evento.id == evento_id).first()
+    if not evento:
+        raise HTTPException(status_code=404, detail="Evento não encontrado.")
+    return {"id": evento.id, "nome": evento.nome, "local": evento.local}
+
+
 @router.get("/publicos", response_model=List[evento_schema.EventoResponse])
 def listar_eventos_publicos(
     db: Session = Depends(get_db),

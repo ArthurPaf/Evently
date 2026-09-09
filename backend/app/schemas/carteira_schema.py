@@ -18,6 +18,10 @@ class RecargaCreate(BaseModel):
     valor: float
 
 
+class RecargaPropriaCreate(BaseModel):
+    valor: float
+
+
 class ItemVendaInput(BaseModel):
     produto_id: int
     quantidade: int

@@ -13,6 +13,7 @@ from app.routers import auth, barraca, evento
 from app.routers import produto_router as produto
 from app.routers import vendedor
 from app.routers import administrador_router
+from app.routers import cliente_router, transacao_router
 
 # Criação única das tabelas
 Base.metadata.create_all(bind=engine)
@@ -39,6 +40,8 @@ app.include_router(admin_router.router)
 app.include_router(vendedor.router)
 app.include_router(produto.produto_direct_router)
 app.include_router(administrador_router.router)
+app.include_router(cliente_router.router)
+app.include_router(transacao_router.router)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

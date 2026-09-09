@@ -10,6 +10,7 @@ import '../screens/login_screen.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../providers/transacao_provider.dart';
 
+
 // --- TELA 1: EVENTOS DO VENDEDOR ---
 class PainelVendedorView extends ConsumerWidget {
   const PainelVendedorView({super.key});
@@ -318,6 +319,7 @@ class _ProdutosDaBarracaVendedorViewState
                       height: 250,
                       child: MobileScanner(
                         onDetect: (capture) {
+                          if (capture.barcodes.isEmpty) return;
                           final valor = capture.barcodes.first.rawValue;
                           if (valor != null) {
                             setModalState(() {

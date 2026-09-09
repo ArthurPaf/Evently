@@ -82,8 +82,8 @@ class _RecargaViewState extends ConsumerState<RecargaView> {
                   children: [
                     MobileScanner(
                       onDetect: (capture) {
-                        final barcode = capture.barcodes.first;
-                        final valor = barcode.rawValue;
+                        if (capture.barcodes.isEmpty) return;
+                        final valor = capture.barcodes.first.rawValue;
                         if (valor != null) {
                           setState(() {
                             _codigoController.text = valor;
