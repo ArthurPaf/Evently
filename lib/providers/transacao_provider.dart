@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
@@ -88,6 +89,18 @@ class TransacaoService {
       return jsonDecode(response.body);
     }
     throw Exception('Falha ao carregar dashboard (${response.statusCode})');
+  }
+
+  // Baixa o relatório em PDF (bytes brutos do arquivo)
+  Future<Uint8List?> exportarDashboardPdf(int eventoId) async {
+    final url = Uri.parse('$_baseUrl/eventos/$eventoId/dashboard/exportar');
+    final headers = await _headers();
+    final response = await _client.get(url, headers: headers);
+
+    if (response.statusCode == 200) {
+      return response.bodyBytes;
+    }
+    return null;
   }
 }
 

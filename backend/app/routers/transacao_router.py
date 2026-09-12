@@ -1,5 +1,5 @@
-from sqlalchemy import func
-from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import func, desc
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -10,6 +10,7 @@ from app.models import (
 )
 from app.permissions import usuario_gerencia_evento
 from app.controllers.transacao_controller import realizar_recarga, realizar_venda
+from app.relatorio_utils import gerar_relatorio_pdf
 from app.schemas.carteira_schema import RecargaCreate, VendaCreate, TransacaoResponse
 
 router = APIRouter(tags=["Transações"])
@@ -71,25 +72,12 @@ def criar_venda(
 
 # --- DASHBOARD (exclusivo do organizador dono — administrador não vê dados financeiros) ---
 
-@router.get("/eventos/{evento_id}/dashboard")
-def dashboard_evento(
-    evento_id: int,
-    db: Session = Depends(get_db),
-    usuario: dict = Depends(get_usuario_atual),
-):
-    evento = db.query(Evento).filter(Evento.id == evento_id).first()
-    if not evento:
-        raise HTTPException(status_code=404, detail="Evento não encontrado.")
-
-    if (
-        usuario["perfil"] != TipoPerfil.ORGANIZADOR.value
-        or evento.organizador_id != usuario["id"]
-    ):
-        raise HTTPException(
-            status_code=403,
-            detail="Apenas o organizador do evento pode ver o dashboard financeiro.",
-        )
-
+def _calcular_dashboard(db: Session, evento_id: int) -> dict:
+    """
+    Monta os dados do dashboard. Compartilhado entre a rota que retorna JSON
+    (para exibir no app) e a rota que exporta o relatório em PDF, evitando
+    duplicar a mesma lógica de consulta nos dois lugares.
+    """
     base_vendas = (
         db.query(Transacao)
         .join(Carteira, Transacao.carteira_id == Carteira.id)
@@ -117,6 +105,7 @@ def dashboard_evento(
         .all()
     )
 
+    # Vendas por barraca — ordenado da que mais lucrou para a que menos lucrou
     vendas_por_barraca = (
         db.query(
             Barraca.nome,
@@ -126,20 +115,35 @@ def dashboard_evento(
         .join(Carteira, Transacao.carteira_id == Carteira.id)
         .filter(Carteira.evento_id == evento_id, Transacao.tipo == TipoTransacao.VENDA)
         .group_by(Barraca.nome)
+        .order_by(desc("valor_total"))
         .all()
     )
 
-    vendas_por_hora = (
+    # O banco grava em UTC (datetime.utcnow()); convertemos para o horário
+    # do Brasil antes de agrupar, senão o gráfico fica adiantado.
+    data_hora_local = func.timezone(
+        "America/Sao_Paulo", func.timezone("UTC", Transacao.data_hora)
+    )
+    # Agrupa por DIA + HORA (não só hora), para não misturar horários de
+    # dias diferentes em eventos de 2, 3 ou mais dias.
+    periodo_expr = func.date_trunc("hour", data_hora_local)
+
+    vendas_por_periodo_raw = (
         db.query(
-            func.extract("hour", Transacao.data_hora).label("hora"),
+            periodo_expr.label("periodo"),
             func.coalesce(func.sum(Transacao.valor_total), 0.0).label("valor_total"),
         )
         .join(Carteira, Transacao.carteira_id == Carteira.id)
         .filter(Carteira.evento_id == evento_id, Transacao.tipo == TipoTransacao.VENDA)
-        .group_by(func.extract("hour", Transacao.data_hora))
-        .order_by("hora")
+        .group_by(periodo_expr)
+        .order_by(periodo_expr)
         .all()
     )
+
+    vendas_por_periodo = [
+        {"periodo": periodo.strftime("%d/%m %Hh"), "valor_total": float(valor)}
+        for periodo, valor in vendas_por_periodo_raw
+    ]
 
     return {
         "total_vendido": total_vendido,
@@ -151,7 +155,48 @@ def dashboard_evento(
         "vendas_por_barraca": [
             {"barraca": nome, "valor_total": float(valor)} for nome, valor in vendas_por_barraca
         ],
-        "vendas_por_hora": [
-            {"hora": int(hora), "valor_total": float(valor)} for hora, valor in vendas_por_hora
-        ],
+        "vendas_por_periodo": vendas_por_periodo,
     }
+
+
+def _verificar_acesso_dashboard(db: Session, evento_id: int, usuario: dict) -> Evento:
+    evento = db.query(Evento).filter(Evento.id == evento_id).first()
+    if not evento:
+        raise HTTPException(status_code=404, detail="Evento não encontrado.")
+    if (
+        usuario["perfil"] != TipoPerfil.ORGANIZADOR.value
+        or evento.organizador_id != usuario["id"]
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Apenas o organizador do evento pode ver o dashboard financeiro.",
+        )
+    return evento
+
+
+@router.get("/eventos/{evento_id}/dashboard")
+def dashboard_evento(
+    evento_id: int,
+    db: Session = Depends(get_db),
+    usuario: dict = Depends(get_usuario_atual),
+):
+    _verificar_acesso_dashboard(db, evento_id, usuario)
+    return _calcular_dashboard(db, evento_id)
+
+
+@router.get("/eventos/{evento_id}/dashboard/exportar")
+def exportar_dashboard_pdf(
+    evento_id: int,
+    db: Session = Depends(get_db),
+    usuario: dict = Depends(get_usuario_atual),
+):
+    evento = _verificar_acesso_dashboard(db, evento_id, usuario)
+    dados = _calcular_dashboard(db, evento_id)
+    pdf_bytes = gerar_relatorio_pdf(evento.nome, dados)
+
+    nome_arquivo = f"relatorio_{evento.nome}.pdf".replace(" ", "_")
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{nome_arquivo}"'},
+    )

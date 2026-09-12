@@ -1,5 +1,7 @@
+import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fl_chart/fl_chart.dart';
 import '../providers/transacao_provider.dart';
 
 class DashboardView extends ConsumerWidget {
@@ -7,6 +9,33 @@ class DashboardView extends ConsumerWidget {
   final String nomeEvento;
 
   const DashboardView({super.key, required this.eventoId, required this.nomeEvento});
+
+  Future<void> _exportarRelatorio(BuildContext context, WidgetRef ref) async {
+    final bytes = await ref.read(transacaoServiceProvider).exportarDashboardPdf(eventoId);
+
+    if (bytes == null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Erro ao gerar o relatório.'), backgroundColor: Colors.red),
+        );
+      }
+      return;
+    }
+
+    // Dispara o download no navegador (Flutter Web)
+    final blob = html.Blob([bytes], 'application/pdf');
+    final url = html.Url.createObjectUrlFromBlob(blob);
+    html.AnchorElement(href: url)
+      ..setAttribute('download', 'relatorio_$nomeEvento.pdf')
+      ..click();
+    html.Url.revokeObjectUrl(url);
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Relatório exportado!'), backgroundColor: Colors.green),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -17,6 +46,13 @@ class DashboardView extends ConsumerWidget {
         title: Text('Dashboard - $nomeEvento'),
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.download_outlined),
+            tooltip: 'Exportar Relatório (PDF)',
+            onPressed: () => _exportarRelatorio(context, ref),
+          ),
+        ],
       ),
       body: dashboardAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -25,14 +61,13 @@ class DashboardView extends ConsumerWidget {
           final totalVendido = (dados['total_vendido'] as num).toDouble();
           final numeroTransacoes = dados['numero_transacoes'] as int;
           final produtosMaisVendidos = dados['produtos_mais_vendidos'] as List;
+          // Já vem ordenado do backend, da barraca que mais vendeu para a que menos vendeu.
           final vendasPorBarraca = dados['vendas_por_barraca'] as List;
-          final vendasPorHora = dados['vendas_por_hora'] as List;
+          final vendasPorPeriodo = dados['vendas_por_periodo'] as List;
 
-          final maiorValorHora = vendasPorHora.isEmpty
-              ? 1.0
-              : vendasPorHora
-                  .map((v) => (v['valor_total'] as num).toDouble())
-                  .reduce((a, b) => a > b ? a : b);
+          final periodos = vendasPorPeriodo.map((v) => v['periodo'] as String).toList();
+          final valores = vendasPorPeriodo.map((v) => (v['valor_total'] as num).toDouble()).toList();
+          final maiorValor = valores.isEmpty ? 1.0 : valores.reduce((a, b) => a > b ? a : b);
 
           return RefreshIndicator(
             onRefresh: () async => ref.invalidate(dashboardProvider(eventoId)),
@@ -62,48 +97,102 @@ class DashboardView extends ConsumerWidget {
                 ),
                 const SizedBox(height: 24),
 
-                Text('Vendas por Horário',
+                Text('Vendas por Período',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                Text(
+                  'Agrupado por dia e hora — cobre eventos de vários dias.',
+                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                ),
                 const SizedBox(height: 12),
-                if (vendasPorHora.isEmpty)
-                  const Text('Sem vendas registradas ainda.')
+                if (vendasPorPeriodo.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: Text('Sem vendas registradas ainda.'),
+                  )
                 else
                   SizedBox(
-                    height: 160,
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: vendasPorHora.map((v) {
-                        final hora = v['hora'];
-                        final valor = (v['valor_total'] as num).toDouble();
-                        final alturaRelativa = (valor / maiorValorHora) * 120;
-
-                        return Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 2),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                Text(
-                                  valor > 0 ? valor.toStringAsFixed(0) : '',
-                                  style: const TextStyle(fontSize: 9),
-                                ),
-                                Container(
-                                  height: alturaRelativa < 4 ? 4 : alturaRelativa,
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context).colorScheme.primary,
-                                    borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text('${hora}h', style: const TextStyle(fontSize: 10)),
-                              ],
+                    height: 240,
+                    child: BarChart(
+                      BarChartData(
+                        alignment: BarChartAlignment.spaceAround,
+                        maxY: maiorValor * 1.25,
+                        gridData: FlGridData(
+                          show: true,
+                          drawVerticalLine: false,
+                          horizontalInterval: maiorValor / 4 == 0 ? 1 : maiorValor / 4,
+                          getDrawingHorizontalLine: (value) => FlLine(
+                            color: Colors.grey.withOpacity(0.2),
+                            strokeWidth: 1,
+                          ),
+                        ),
+                        borderData: FlBorderData(show: false),
+                        titlesData: FlTitlesData(
+                          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          leftTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              reservedSize: 44,
+                              getTitlesWidget: (value, meta) => Text(
+                                value.toStringAsFixed(0),
+                                style: const TextStyle(fontSize: 10),
+                              ),
                             ),
                           ),
-                        );
-                      }).toList(),
+                          bottomTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              reservedSize: 48,
+                              getTitlesWidget: (value, meta) {
+                                final i = value.toInt();
+                                if (i < 0 || i >= periodos.length) return const SizedBox.shrink();
+                                return Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: Transform.rotate(
+                                    angle: -0.6,
+                                    child: Text(
+                                      periodos[i],
+                                      style: const TextStyle(fontSize: 9),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                        barTouchData: BarTouchData(
+                          touchTooltipData: BarTouchTooltipData(
+                            getTooltipItem: (group, groupIndex, rod, rodIndex) => BarTooltipItem(
+                              'R\$ ${rod.toY.toStringAsFixed(2)}',
+                              const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                        barGroups: List.generate(periodos.length, (i) {
+                          return BarChartGroupData(
+                            x: i,
+                            barRods: [
+                              BarChartRodData(
+                                toY: valores[i],
+                                width: 16,
+                                borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                                gradient: LinearGradient(
+                                  begin: Alignment.bottomCenter,
+                                  end: Alignment.topCenter,
+                                  colors: [
+                                    Theme.of(context).colorScheme.primary,
+                                    Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          );
+                        }),
+                      ),
                     ),
                   ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 28),
 
                 Text('Produtos Mais Vendidos',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
@@ -129,15 +218,28 @@ class DashboardView extends ConsumerWidget {
 
                 Text('Vendas por Barraca',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                Text(
+                  'Ordenado da barraca que mais vendeu para a que menos vendeu.',
+                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                ),
                 const SizedBox(height: 8),
                 if (vendasPorBarraca.isEmpty)
                   const Text('Sem vendas registradas ainda.')
                 else
-                  ...vendasPorBarraca.map((b) {
+                  ...List.generate(vendasPorBarraca.length, (i) {
+                    final b = vendasPorBarraca[i];
                     return Card(
                       margin: const EdgeInsets.symmetric(vertical: 4),
                       child: ListTile(
-                        leading: const Icon(Icons.store, color: Colors.deepPurple),
+                        leading: CircleAvatar(
+                          backgroundColor: i == 0
+                              ? Colors.amber.withOpacity(0.2)
+                              : Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                          child: i == 0
+                              ? const Icon(Icons.emoji_events, color: Colors.amber)
+                              : Icon(Icons.store, color: Theme.of(context).colorScheme.primary),
+                        ),
                         title: Text(b['barraca']),
                         trailing: Text(
                           'R\$ ${(b['valor_total'] as num).toStringAsFixed(2)}',

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application/providers/barraca_provider.dart';
+import 'package:flutter_application/views/configuracoes_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/evento_model.dart';
 import '../models/barraca_model.dart';
@@ -56,6 +57,17 @@ class PainelVendedorView extends ConsumerWidget {
               title: const Text('Meus Eventos'),
               selected: true,
               onTap: () => Navigator.pop(context),
+            ),
+            ListTile(
+              leading: const Icon(Icons.settings_outlined),
+              title: const Text('Configurações'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ConfiguracoesView()),
+                );
+              },
             ),
             const Divider(),
             ListTile(

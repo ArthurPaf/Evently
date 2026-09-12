@@ -8,6 +8,7 @@ import '../models/transacao_model.dart';
 import '../providers/auth_provider.dart';
 import '../providers/cliente_provider.dart';
 import '../views/cliente_entry_view.dart';
+import 'configuracoes_view.dart';
 
 // --- CARTEIRA DIGITAL (QR Code + saldo + extrato) ---
 class MinhaCarteiraView extends ConsumerStatefulWidget {
@@ -186,6 +187,16 @@ class _MinhaCarteiraViewState extends ConsumerState<MinhaCarteiraView> {
         automaticallyImplyLeading: false,
         actions: [
           IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Configurações',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ConfiguracoesView()),
+              );
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Sair',
             onPressed: _sair,
@@ -233,10 +244,26 @@ class _MinhaCarteiraViewState extends ConsumerState<MinhaCarteiraView> {
                           ),
                         ),
                         const SizedBox(height: 24),
-                        QrImageView(
-                          data: carteira.codigoIdentificador,
-                          version: QrVersions.auto,
-                          size: 200,
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: QrImageView(
+                            data: carteira.codigoIdentificador,
+                            version: QrVersions.auto,
+                            size: 200,
+                            backgroundColor: Colors.white,
+                            eyeStyle: const QrEyeStyle(
+                              eyeShape: QrEyeShape.square,
+                              color: Colors.black,
+                            ),
+                            dataModuleStyle: const QrDataModuleStyle(
+                              dataModuleShape: QrDataModuleShape.square,
+                              color: Colors.black,
+                            ),
+                          ),
                         ),
                         const SizedBox(height: 12),
                         Text(

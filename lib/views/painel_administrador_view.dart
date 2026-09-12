@@ -6,6 +6,7 @@ import '../providers/administrador_provider.dart';
 import 'detalhes_evento_view.dart';
 import 'recarga_view.dart';
 import '../screens/login_screen.dart';
+import 'configuracoes_view.dart';
 
 class PainelAdministradorView extends ConsumerWidget {
   const PainelAdministradorView({super.key});
@@ -214,6 +215,17 @@ class PainelAdministradorView extends ConsumerWidget {
               title: const Text('Meus Eventos'),
               selected: true,
               onTap: () => Navigator.pop(context),
+            ),
+            ListTile(
+              leading: const Icon(Icons.settings_outlined),
+              title: const Text('Configurações'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ConfiguracoesView()),
+                );
+              },
             ),
             const Divider(),
             ListTile(
