@@ -1,17 +1,33 @@
-# flutter_application
+# 🎪 Gestão de Eventos & Barracas
 
-A new Flutter project.
+Um sistema Full-Stack completo para gerenciamento de eventos e barracas organizacionais. O projeto permite cadastrar eventos, criar barracas associadas e selecionar/atribuir responsáveis cadastrados no sistema em tempo real.
+O sistema também conta com uma url para o cliente que terá seu QrCode para adicionar créditos e fazer suas compras no evento.
+---
 
-## Getting Started
+## 🛠️ Tecnologias Utilizadas
 
-This project is a starting point for a Flutter application.
+### **Frontend (Mobile / Web)**
+- **[Flutter](https://flutter.dev/)** — Framework UI multiplataforma.
+- **[Riverpod](https://riverpod.dev/)** — Gerenciamento de estado reativo e injeção de dependências.
+- **HTTP (http package)** — Integração e consumo de APIs RESTful.
 
-A few resources to get you started if this is your first Flutter project:
+### **Backend (API)**
+- **[Python 3.14+](https://www.python.org/)** — Linguagem base do backend.
+- **[FastAPI](https://fastapi.tiangolo.com/)** — Framework web assíncrono e de alto desempenho.
+- **[SQLAlchemy](https://www.sqlalchemy.org/)** — ORM para mapeamento e manipulação do banco de dados.
+- **[Pydantic v2](https://docs.pydantic.dev/)** — Validação de dados e definição de schemas de entrada/saída.
+- **[Uvicorn](https://www.uvicorn.org/)** — Server ASGI leve para execução da aplicação FastAPI.
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+---
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## 🚀 Funcionalidades Principais
+
+- 📅 **Gestão de Eventos:** Criação e listagem de eventos.
+- 🎪 **Gestão de Barracas:** Cadastro de barracas (Nome, Tipo) vinculadas a um evento específico.
+- 👤 **Seleção Reativa de Responsável:**
+  - Componente desacoplado (`SeletorUsuarioWidget`) que busca os usuários cadastrados via API.
+  - Filtro e pesquisa em tempo real por nome ou e-mail.
+  - Associação dinâmica da chave estrangeira `responsavel_id` na entidade `Barraca`.
+- 🔐 **Autenticação e Usuários:** Integração com serviços de usuário existentes na aplicação.
+
+---
