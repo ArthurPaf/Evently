@@ -5,6 +5,7 @@ import logging
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
+from email.mime.application import MIMEApplication
 from io import BytesIO
 
 logger = logging.getLogger("evently_backend")
@@ -21,6 +22,52 @@ def _gerar_qr_code_bytes(conteudo: str) -> bytes:
     img = qrcode.make(conteudo)
     buffer = BytesIO()
     img.save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
+def _gerar_pdf_cartao(qr_bytes: bytes, nome_cliente: str, nome_evento: str, codigo: str) -> bytes:
+    """
+    Gera um PDF com o QR Code e o código do cartão virtual, para o cliente
+    salvar/imprimir e usar mesmo sem internet ou sem conseguir abrir o app.
+    (O vendedor, na hora da venda, ainda precisa de conexão para validar
+    e debitar o saldo — isso não muda.)
+    """
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.units import cm
+    from reportlab.pdfgen import canvas
+    from reportlab.lib.utils import ImageReader
+
+    buffer = BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    largura, altura = A4
+
+    c.setFont("Helvetica-Bold", 20)
+    c.drawCentredString(largura / 2, altura - 4 * cm, "Cartão Virtual - Evently")
+
+    c.setFont("Helvetica", 14)
+    c.drawCentredString(largura / 2, altura - 5.2 * cm, nome_evento)
+
+    c.setFont("Helvetica", 12)
+    c.drawCentredString(largura / 2, altura - 6 * cm, f"Titular: {nome_cliente}")
+
+    qr_image = ImageReader(BytesIO(qr_bytes))
+    tamanho_qr = 8 * cm
+    x_qr = (largura - tamanho_qr) / 2
+    y_qr = altura - 15 * cm
+    c.drawImage(qr_image, x_qr, y_qr, width=tamanho_qr, height=tamanho_qr)
+
+    c.setFont("Helvetica-Bold", 16)
+    c.drawCentredString(largura / 2, y_qr - 1 * cm, f"Código: {codigo}")
+
+    c.setFont("Helvetica-Oblique", 10)
+    c.drawCentredString(
+        largura / 2, y_qr - 2 * cm,
+        "Guarde este cartão. Apresente-o nas barracas mesmo sem conexão à internet.",
+    )
+
+    c.showPage()
+    c.save()
+    buffer.seek(0)
     return buffer.getvalue()
 
 
@@ -63,6 +110,19 @@ def enviar_cartao_virtual(destinatario: str, nome_cliente: str, nome_evento: str
         imagem.add_header("Content-ID", "<qrcode_cartao>")
         imagem.add_header("Content-Disposition", "inline", filename="qrcode.png")
         mensagem.attach(imagem)
+
+        # Anexa também um PDF do cartão, para uso sem internet / impressão
+        try:
+            pdf_bytes = _gerar_pdf_cartao(qr_bytes, nome_cliente, nome_evento, codigo)
+            anexo_pdf = MIMEApplication(pdf_bytes, _subtype="pdf")
+            anexo_pdf.add_header(
+                "Content-Disposition", "attachment", filename="cartao_virtual_evently.pdf"
+            )
+            mensagem.attach(anexo_pdf)
+        except Exception as e:
+            # Se a geração do PDF falhar por qualquer motivo (ex: reportlab
+            # não instalado), o e-mail ainda é enviado com o QR Code inline.
+            logger.warning(f"Não foi possível anexar o PDF do cartão: {str(e)}")
 
         contexto = ssl.create_default_context()
         with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, context=contexto) as servidor:

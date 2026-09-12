@@ -4,6 +4,7 @@ import '../models/evento_model.dart';
 import '../providers/auth_provider.dart';
 import '../providers/administrador_provider.dart';
 import 'detalhes_evento_view.dart';
+import 'recarga_view.dart';
 import '../screens/login_screen.dart';
 
 class PainelAdministradorView extends ConsumerWidget {
@@ -20,6 +21,60 @@ class PainelAdministradorView extends ConsumerWidget {
     } catch (_) {
       return dataISO;
     }
+  }
+
+  // --- MENU AO SEGURAR O CARD DO EVENTO ---
+  void _exibirOpcoesEvento(BuildContext context, WidgetRef ref, Evento evento) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.qr_code_scanner, color: Colors.teal),
+                title: const Text('Recarregar Saldo de Cliente'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => RecargaView(
+                        eventoId: evento.id,
+                        nomeEvento: evento.nome,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const Divider(),
+              ListTile(
+                leading: const Icon(Icons.edit_outlined, color: Colors.blue),
+                title: const Text('Editar Evento'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _abrirModalEditarEvento(context, ref, evento);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   // --- MODAL: EDITAR EVENTO (sem opção de excluir - só o organizador exclui) ---
@@ -81,7 +136,6 @@ class PainelAdministradorView extends ConsumerWidget {
                     local: localController.text.trim(),
                     dataInicio: evento.dataInicio,
                     dataFim: evento.dataFim,
-                    // mantém os administradores já vinculados (não mexe na lista aqui)
                     administradorIds: evento.administradores.map((a) => a.id).toList(),
                   );
 
@@ -193,7 +247,7 @@ class PainelAdministradorView extends ConsumerWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              'Toque em um evento para gerenciar barracas e produtos, ou segure para editar os dados do evento.',
+              'Toque em um evento para gerenciar barracas e produtos, ou segure para ver o dashboard, recarregar saldo ou editar.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Colors.grey[600],
                   ),
@@ -247,7 +301,7 @@ class PainelAdministradorView extends ConsumerWidget {
                               );
                             },
                             onLongPress: () {
-                              _abrirModalEditarEvento(context, ref, evento);
+                              _exibirOpcoesEvento(context, ref, evento);
                             },
                           ),
                         );

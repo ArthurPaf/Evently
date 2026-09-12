@@ -315,19 +315,26 @@ class _ProdutosDaBarracaVendedorViewState
                       style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
                   if (mostrarScanner)
-                    SizedBox(
-                      height: 250,
-                      child: MobileScanner(
-                        onDetect: (capture) {
-                          if (capture.barcodes.isEmpty) return;
-                          final valor = capture.barcodes.first.rawValue;
-                          if (valor != null) {
-                            setModalState(() {
-                              codigoController.text = valor;
-                              mostrarScanner = false;
-                            });
-                          }
-                        },
+                    Center(
+                      child: SizedBox(
+                        width: 250,
+                        height: 250,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: MobileScanner(
+                            fit: BoxFit.cover,
+                            onDetect: (capture) {
+                              if (capture.barcodes.isEmpty) return;
+                              final valor = capture.barcodes.first.rawValue;
+                              if (valor != null) {
+                                setModalState(() {
+                                  codigoController.text = valor;
+                                  mostrarScanner = false;
+                                });
+                              }
+                            },
+                          ),
+                        ),
                       ),
                     )
                   else

@@ -12,6 +12,7 @@ import '../models/administrador_model.dart';
 import 'cadastrar_administrador_view.dart';
 import 'dashboard_view.dart';
 import 'recarga_view.dart';
+import 'configuracoes_view.dart';
 
 class PainelOrganizadorView extends ConsumerWidget {
   const PainelOrganizadorView({super.key});
@@ -456,8 +457,9 @@ class PainelOrganizadorView extends ConsumerWidget {
               title: const Text('Configurações'),
               onTap: () {
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Tela de Configurações em breve!')),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ConfiguracoesView()),
                 );
               },
             ),

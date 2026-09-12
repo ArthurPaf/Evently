@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../models/evento_model.dart';
+import '../models/carteira_model.dart';
+import '../models/transacao_model.dart';
 import '../providers/auth_provider.dart';
 import '../providers/cliente_provider.dart';
 import '../views/cliente_entry_view.dart';
@@ -19,14 +21,20 @@ class MinhaCarteiraView extends ConsumerStatefulWidget {
 
 class _MinhaCarteiraViewState extends ConsumerState<MinhaCarteiraView> {
   Timer? _timer;
-  int? _carteiraId;
+
+  Carteira? _carteira;
+  List<Transacao> _extrato = [];
+  bool _carregando = true;
+  String? _erro;
 
   @override
   void initState() {
     super.initState();
-    // Atualiza saldo/extrato automaticamente a cada 3 segundos, sem precisar
-    // recarregar a página — cobre recargas/vendas feitas em outro dispositivo.
-    _timer = Timer.periodic(const Duration(seconds: 3), (_) => _atualizar());
+    // Busca própria, local, sem depender de cache de provider — garante que
+    // cada novo login vê exclusivamente os dados dessa sessão, sem chance de
+    // exibir por engano dados de um cliente anterior.
+    _carregarTudo();
+    _timer = Timer.periodic(const Duration(seconds: 3), (_) => _carregarTudo(mostrarLoading: false));
   }
 
   @override
@@ -35,15 +43,33 @@ class _MinhaCarteiraViewState extends ConsumerState<MinhaCarteiraView> {
     super.dispose();
   }
 
-  void _atualizar() {
+  Future<void> _carregarTudo({bool mostrarLoading = true}) async {
     if (!mounted) return;
-    ref.invalidate(carteiraProvider(widget.evento.id));
-    if (_carteiraId != null) {
-      ref.invalidate(extratoProvider(_carteiraId!));
+    if (mostrarLoading) setState(() => _carregando = true);
+
+    try {
+      final service = ref.read(clienteServiceProvider);
+      final carteira = await service.entrarNoEvento(widget.evento.id);
+      final extrato = await service.meuExtrato(carteira.id);
+
+      if (!mounted) return;
+      setState(() {
+        _carteira = carteira;
+        _extrato = extrato;
+        _carregando = false;
+        _erro = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _carregando = false;
+        _erro = e.toString();
+      });
     }
   }
 
   void _sair() async {
+    _timer?.cancel();
     await ref.read(authProvider.notifier).logout();
     if (context.mounted) {
       Navigator.of(context).pushReplacement(
@@ -97,7 +123,7 @@ class _MinhaCarteiraViewState extends ConsumerState<MinhaCarteiraView> {
 
               if (sucesso) {
                 Navigator.pop(modalContext);
-                _atualizar(); // reflete o novo saldo na hora, sem esperar o próximo ciclo
+                _carregarTudo(mostrarLoading: false);
               }
             }
 
@@ -152,20 +178,12 @@ class _MinhaCarteiraViewState extends ConsumerState<MinhaCarteiraView> {
 
   @override
   Widget build(BuildContext context) {
-    final carteiraAsync = ref.watch(carteiraProvider(widget.evento.id));
-
-    // Guarda o id da carteira assim que ela chega, pra o timer conseguir
-    // invalidar o extrato certo nos próximos ciclos.
-    ref.listen(carteiraProvider(widget.evento.id), (previous, next) {
-      next.whenData((carteira) => _carteiraId = carteira.id);
-    });
-
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
         title: Text(widget.evento.nome),
-        automaticallyImplyLeading: false, // sem botão de voltar: aqui é a única tela do cliente
+        automaticallyImplyLeading: false,
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -174,15 +192,19 @@ class _MinhaCarteiraViewState extends ConsumerState<MinhaCarteiraView> {
           ),
         ],
       ),
-      body: carteiraAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text('Erro: $err')),
-        data: (carteira) {
-          _carteiraId = carteira.id;
-          final extratoAsync = ref.watch(extratoProvider(carteira.id));
+      body: Builder(
+        builder: (context) {
+          if (_carregando) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (_erro != null || _carteira == null) {
+            return Center(child: Text('Erro: ${_erro ?? "desconhecido"}'));
+          }
+
+          final carteira = _carteira!;
 
           return RefreshIndicator(
-            onRefresh: () async => _atualizar(),
+            onRefresh: () => _carregarTudo(),
             child: ListView(
               padding: const EdgeInsets.all(20),
               children: [
@@ -237,47 +259,36 @@ class _MinhaCarteiraViewState extends ConsumerState<MinhaCarteiraView> {
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
-                extratoAsync.when(
-                  loading: () => const Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Center(child: CircularProgressIndicator()),
-                  ),
-                  error: (err, _) => Text('Erro ao carregar extrato: $err'),
-                  data: (transacoes) {
-                    if (transacoes.isEmpty) {
-                      return const Text('Nenhuma movimentação ainda.');
-                    }
-                    return Column(
-                      children: transacoes.map((t) {
-                        final isRecarga = t.tipo == 'recarga';
-                        return Card(
-                          margin: const EdgeInsets.symmetric(vertical: 4),
-                          child: ListTile(
-                            leading: Icon(
-                              isRecarga ? Icons.add_circle_outline : Icons.remove_circle_outline,
-                              color: isRecarga ? Colors.green : Colors.red,
-                            ),
-                            title: Text(isRecarga ? 'Recarga' : 'Compra'),
-                            subtitle: Text(
-                              '${t.dataHora.day.toString().padLeft(2, '0')}/'
-                              '${t.dataHora.month.toString().padLeft(2, '0')} às '
-                              '${t.dataHora.hour.toString().padLeft(2, '0')}:${t.dataHora.minute.toString().padLeft(2, '0')}'
-                              '${t.itens.isNotEmpty ? '\n${t.itens.map((i) => '${i.quantidade}x ${i.nomeProduto}').join(', ')}' : ''}',
-                            ),
-                            isThreeLine: t.itens.isNotEmpty,
-                            trailing: Text(
-                              '${isRecarga ? '+' : '-'} R\$ ${t.valorTotal.toStringAsFixed(2)}',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: isRecarga ? Colors.green : Colors.red,
-                              ),
-                            ),
+                if (_extrato.isEmpty)
+                  const Text('Nenhuma movimentação ainda.')
+                else
+                  ..._extrato.map((t) {
+                    final isRecarga = t.tipo == 'recarga';
+                    return Card(
+                      margin: const EdgeInsets.symmetric(vertical: 4),
+                      child: ListTile(
+                        leading: Icon(
+                          isRecarga ? Icons.add_circle_outline : Icons.remove_circle_outline,
+                          color: isRecarga ? Colors.green : Colors.red,
+                        ),
+                        title: Text(isRecarga ? 'Recarga' : 'Compra'),
+                        subtitle: Text(
+                          '${t.dataHora.day.toString().padLeft(2, '0')}/'
+                          '${t.dataHora.month.toString().padLeft(2, '0')} às '
+                          '${t.dataHora.hour.toString().padLeft(2, '0')}:${t.dataHora.minute.toString().padLeft(2, '0')}'
+                          '${t.itens.isNotEmpty ? '\n${t.itens.map((i) => '${i.quantidade}x ${i.nomeProduto}').join(', ')}' : ''}',
+                        ),
+                        isThreeLine: t.itens.isNotEmpty,
+                        trailing: Text(
+                          '${isRecarga ? '+' : '-'} R\$ ${t.valorTotal.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: isRecarga ? Colors.green : Colors.red,
                           ),
-                        );
-                      }).toList(),
+                        ),
+                      ),
                     );
-                  },
-                ),
+                  }),
               ],
             ),
           );

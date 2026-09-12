@@ -103,7 +103,7 @@ class _CadastrarAdministradorViewState extends ConsumerState<CadastrarAdministra
                 controller: _senhaController,
                 obscureText: true,
                 decoration: const InputDecoration(
-                  labelText: 'Senha provisória',
+                  labelText: 'Senha',
                   prefixIcon: Icon(Icons.lock_outline),
                   border: OutlineInputBorder(),
                 ),

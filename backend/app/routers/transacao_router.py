@@ -69,7 +69,7 @@ def criar_venda(
     return realizar_venda(db, barraca_id, dados, vendedor_id=usuario["id"])
 
 
-# --- DASHBOARD (organizador dono ou administrador vinculado ao evento) ---
+# --- DASHBOARD (exclusivo do organizador dono — administrador não vê dados financeiros) ---
 
 @router.get("/eventos/{evento_id}/dashboard")
 def dashboard_evento(
@@ -80,9 +80,14 @@ def dashboard_evento(
     evento = db.query(Evento).filter(Evento.id == evento_id).first()
     if not evento:
         raise HTTPException(status_code=404, detail="Evento não encontrado.")
-    if not usuario_gerencia_evento(db, evento, usuario):
+
+    if (
+        usuario["perfil"] != TipoPerfil.ORGANIZADOR.value
+        or evento.organizador_id != usuario["id"]
+    ):
         raise HTTPException(
-            status_code=403, detail="Sem permissão para ver o dashboard deste evento."
+            status_code=403,
+            detail="Apenas o organizador do evento pode ver o dashboard financeiro.",
         )
 
     base_vendas = (

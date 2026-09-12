@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_web_plugins/flutter_web_plugins.dart';
 import 'package:flutter_application/screens/login_screen.dart';
 import 'package:flutter_application/views/cliente_entry_view.dart';
+import 'package:flutter_application/providers/theme_provider.dart';
 
 void main() {
   usePathUrlStrategy(); // remove o "#" da URL no Flutter Web (ex: /evento/3 em vez de /#/evento/3)
@@ -13,14 +14,30 @@ void main() {
   );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeProvider);
+
     return MaterialApp(
       title: 'Evently',
-      theme: ThemeData(primarySwatch: Colors.blue),
+      themeMode: themeMode,
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.deepPurple,
+          brightness: Brightness.light,
+        ),
+      ),
+      darkTheme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.deepPurple,
+          brightness: Brightness.dark,
+        ),
+      ),
       // Sem "home": a rota inicial é lida direto da URL do navegador.
       onGenerateRoute: (settings) {
         final uri = Uri.parse(settings.name ?? '/');

@@ -63,6 +63,43 @@ class _RecargaViewState extends ConsumerState<RecargaView> {
     }
   }
 
+  Widget _buildScanner() {
+    return Center(
+      child: SizedBox(
+        width: 300,
+        height: 300,
+        child: Stack(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: MobileScanner(
+                fit: BoxFit.cover,
+                onDetect: (capture) {
+                  if (capture.barcodes.isEmpty) return;
+                  final valor = capture.barcodes.first.rawValue;
+                  if (valor != null) {
+                    setState(() {
+                      _codigoController.text = valor;
+                      _mostrarScanner = false;
+                    });
+                  }
+                },
+              ),
+            ),
+            Positioned(
+              top: 8,
+              right: 8,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white),
+                onPressed: () => setState(() => _mostrarScanner = false),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -71,82 +108,62 @@ class _RecargaViewState extends ConsumerState<RecargaView> {
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            if (_mostrarScanner)
-              SizedBox(
-                height: 300,
-                child: Stack(
-                  children: [
-                    MobileScanner(
-                      onDetect: (capture) {
-                        if (capture.barcodes.isEmpty) return;
-                        final valor = capture.barcodes.first.rawValue;
-                        if (valor != null) {
-                          setState(() {
-                            _codigoController.text = valor;
-                            _mostrarScanner = false;
-                          });
-                        }
-                      },
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (_mostrarScanner)
+                  _buildScanner()
+                else
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => setState(() => _mostrarScanner = true),
+                      icon: const Icon(Icons.qr_code_scanner),
+                      label: const Text('Escanear QR Code do cliente'),
                     ),
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white),
-                        onPressed: () => setState(() => _mostrarScanner = false),
-                      ),
-                    ),
-                  ],
+                  ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _codigoController,
+                  textCapitalization: TextCapitalization.characters,
+                  decoration: const InputDecoration(
+                    labelText: 'Código do cliente',
+                    prefixIcon: Icon(Icons.confirmation_number_outlined),
+                    border: OutlineInputBorder(),
+                  ),
                 ),
-              )
-            else
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () => setState(() => _mostrarScanner = true),
-                  icon: const Icon(Icons.qr_code_scanner),
-                  label: const Text('Escanear QR Code do cliente'),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _valorController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(
+                    labelText: 'Valor da recarga (R\$)',
+                    prefixIcon: Icon(Icons.attach_money),
+                    border: OutlineInputBorder(),
+                  ),
                 ),
-              ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _codigoController,
-              textCapitalization: TextCapitalization.characters,
-              decoration: const InputDecoration(
-                labelText: 'Código do cliente',
-                prefixIcon: Icon(Icons.confirmation_number_outlined),
-                border: OutlineInputBorder(),
-              ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: _carregando ? null : _confirmarRecarga,
+                    child: _carregando
+                        ? const SizedBox(
+                            width: 20, height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Text('Confirmar Recarga'),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _valorController,
-              keyboardType: TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
-                labelText: 'Valor da recarga (R\$)',
-                prefixIcon: Icon(Icons.attach_money),
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton(
-                onPressed: _carregando ? null : _confirmarRecarga,
-                child: _carregando
-                    ? const SizedBox(
-                        width: 20, height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                      )
-                    : const Text('Confirmar Recarga'),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
