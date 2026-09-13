@@ -11,6 +11,7 @@ from app.models import (
 from app.permissions import usuario_gerencia_evento
 from app.controllers.transacao_controller import realizar_recarga, realizar_venda
 from app.relatorio_utils import gerar_relatorio_pdf
+from app.relatorio_excel_utils import gerar_relatorio_excel
 from app.schemas.carteira_schema import RecargaCreate, VendaCreate, TransacaoResponse
 
 router = APIRouter(tags=["Transações"])
@@ -198,5 +199,23 @@ def exportar_dashboard_pdf(
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{nome_arquivo}"'},
+    )
+
+
+@router.get("/eventos/{evento_id}/dashboard/exportar-excel")
+def exportar_dashboard_excel(
+    evento_id: int,
+    db: Session = Depends(get_db),
+    usuario: dict = Depends(get_usuario_atual),
+):
+    evento = _verificar_acesso_dashboard(db, evento_id, usuario)
+    dados = _calcular_dashboard(db, evento_id)
+    excel_bytes = gerar_relatorio_excel(evento.nome, dados)
+
+    nome_arquivo = f"relatorio_{evento.nome}.xlsx".replace(" ", "_")
+    return Response(
+        content=excel_bytes,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f'attachment; filename="{nome_arquivo}"'},
     )

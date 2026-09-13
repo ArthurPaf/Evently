@@ -10,8 +10,11 @@ class DashboardView extends ConsumerWidget {
 
   const DashboardView({super.key, required this.eventoId, required this.nomeEvento});
 
-  Future<void> _exportarRelatorio(BuildContext context, WidgetRef ref) async {
-    final bytes = await ref.read(transacaoServiceProvider).exportarDashboardPdf(eventoId);
+  Future<void> _exportar(BuildContext context, WidgetRef ref, String formato) async {
+    final service = ref.read(transacaoServiceProvider);
+    final bytes = formato == 'pdf'
+        ? await service.exportarDashboardPdf(eventoId)
+        : await service.exportarDashboardExcel(eventoId);
 
     if (bytes == null) {
       if (context.mounted) {
@@ -22,11 +25,16 @@ class DashboardView extends ConsumerWidget {
       return;
     }
 
+    final mimeType = formato == 'pdf'
+        ? 'application/pdf'
+        : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    final extensao = formato == 'pdf' ? 'pdf' : 'xlsx';
+
     // Dispara o download no navegador (Flutter Web)
-    final blob = html.Blob([bytes], 'application/pdf');
+    final blob = html.Blob([bytes], mimeType);
     final url = html.Url.createObjectUrlFromBlob(blob);
     html.AnchorElement(href: url)
-      ..setAttribute('download', 'relatorio_$nomeEvento.pdf')
+      ..setAttribute('download', 'relatorio_$nomeEvento.$extensao')
       ..click();
     html.Url.revokeObjectUrl(url);
 
@@ -47,10 +55,32 @@ class DashboardView extends ConsumerWidget {
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
         actions: [
-          IconButton(
+          PopupMenuButton<String>(
             icon: const Icon(Icons.download_outlined),
-            tooltip: 'Exportar Relatório (PDF)',
-            onPressed: () => _exportarRelatorio(context, ref),
+            tooltip: 'Exportar Relatório',
+            onSelected: (formato) => _exportar(context, ref, formato),
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'pdf',
+                child: Row(
+                  children: [
+                    Icon(Icons.picture_as_pdf_outlined, size: 20),
+                    SizedBox(width: 8),
+                    Text('Exportar como PDF'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'excel',
+                child: Row(
+                  children: [
+                    Icon(Icons.grid_on_outlined, size: 20),
+                    SizedBox(width: 8),
+                    Text('Exportar como Excel'),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -175,8 +205,8 @@ class DashboardView extends ConsumerWidget {
                             barRods: [
                               BarChartRodData(
                                 toY: valores[i],
-                                width: 16,
-                                borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                                width: 28,
+                                borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
                                 gradient: LinearGradient(
                                   begin: Alignment.bottomCenter,
                                   end: Alignment.topCenter,
@@ -204,7 +234,7 @@ class DashboardView extends ConsumerWidget {
                     return Card(
                       margin: const EdgeInsets.symmetric(vertical: 4),
                       child: ListTile(
-                        leading: const Icon(Icons.local_fire_department, color: Colors.orange),
+                        leading: const Icon(Icons.sell_outlined, color: Colors.deepPurple),
                         title: Text(p['nome']),
                         subtitle: Text('${p['quantidade']} unidades vendidas'),
                         trailing: Text(

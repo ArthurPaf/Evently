@@ -102,6 +102,18 @@ class TransacaoService {
     }
     return null;
   }
+
+  // Baixa o relatório em Excel (bytes brutos do arquivo)
+  Future<Uint8List?> exportarDashboardExcel(int eventoId) async {
+    final url = Uri.parse('$_baseUrl/eventos/$eventoId/dashboard/exportar-excel');
+    final headers = await _headers();
+    final response = await _client.get(url, headers: headers);
+
+    if (response.statusCode == 200) {
+      return response.bodyBytes;
+    }
+    return null;
+  }
 }
 
 final transacaoServiceProvider = Provider<TransacaoService>((ref) {
@@ -109,7 +121,7 @@ final transacaoServiceProvider = Provider<TransacaoService>((ref) {
 });
 
 final dashboardProvider =
-    FutureProvider.family<Map<String, dynamic>, int>((ref, eventoId) async {
+    FutureProvider.autoDispose.family<Map<String, dynamic>, int>((ref, eventoId) async {
   final service = ref.watch(transacaoServiceProvider);
   return await service.buscarDashboard(eventoId);
 });
