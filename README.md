@@ -24,10 +24,6 @@ O sistema também conta com uma url para o cliente que terá seu QrCode para adi
 
 - 📅 **Gestão de Eventos:** Criação e listagem de eventos.
 - 🎪 **Gestão de Barracas:** Cadastro de barracas (Nome, Tipo) vinculadas a um evento específico.
-- 👤 **Seleção Reativa de Responsável:**
-  - Componente desacoplado (`SeletorUsuarioWidget`) que busca os usuários cadastrados via API.
-  - Filtro e pesquisa em tempo real por nome ou e-mail.
-  - Associação dinâmica da chave estrangeira `responsavel_id` na entidade `Barraca`.
 - 🔐 **Autenticação e Usuários:** Integração com serviços de usuário existentes na aplicação.
 
 ---
