@@ -53,3 +53,12 @@ class EventoDAO:
             db.commit()
             db.refresh(evento)
         return evento
+
+    @staticmethod
+    def encerrar_evento(db: Session, evento_id: int):
+        evento = db.query(models.Evento).filter(models.Evento.id == evento_id).first()
+        if evento:
+            evento.encerrado = True
+            db.commit()
+            db.refresh(evento)
+        return evento

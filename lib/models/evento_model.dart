@@ -6,6 +6,7 @@ class Evento {
   final String local;
   final String dataInicio;
   final String dataFim;
+  final bool encerrado;
   final List<int> administradorIds; // usado ao ENVIAR (criar/editar)
   final List<Administrador> administradores; // usado ao RECEBER (exibir)
 
@@ -15,6 +16,7 @@ class Evento {
     required this.local,
     required this.dataInicio,
     required this.dataFim,
+    this.encerrado = false,
     this.administradorIds = const [],
     this.administradores = const [],
   });
@@ -26,6 +28,7 @@ class Evento {
       local: json['local'] ?? '',
       dataInicio: json['data_inicio'] ?? json['dataInicio'] ?? '',
       dataFim: json['data_fim'] ?? json['dataFim'] ?? '',
+      encerrado: json['encerrado'] ?? false,
       administradores: json['administradores'] != null
           ? (json['administradores'] as List)
               .map((a) => Administrador.fromJson(a))

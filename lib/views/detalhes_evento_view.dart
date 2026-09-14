@@ -4,9 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/evento_model.dart';
 import '../models/barraca_model.dart';
 import '../providers/barraca_provider.dart';
-import 'detalhes_barraca_view.dart';
 import '../providers/vendedor_provider.dart';
-import '../models/vendedor_model.dart'; 
+import '../models/vendedor_model.dart';
+import '../providers/auth_provider.dart';
+import '../providers/evento_provider.dart';
+import 'detalhes_barraca_view.dart'; // Tela para cadastro/visualização de produtos
 
 class DetalhesEventoView extends ConsumerWidget {
   final Evento evento;
@@ -28,173 +30,254 @@ class DetalhesEventoView extends ConsumerWidget {
     }
   }
 
-// --- MODAL: CRIAR BARRACA ---
-void _abrirModalNovaBarraca(BuildContext context, WidgetRef ref) {
-  final nomeController = TextEditingController();
-  final tipoController = TextEditingController();
-  final List<int> vendedoresSelecionados = [];
- 
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
-    builder: (modalContext) => StatefulBuilder(
-      builder: (context, setModalState) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(modalContext).viewInsets.bottom + 16,
-            top: 16,
-            left: 16,
-            right: 16,
-          ),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+  // --- DIÁLOGO: CONFIRMAR ENCERRAMENTO DO EVENTO ---
+  void _confirmarEncerramento(BuildContext context, WidgetRef ref) {
+    final dataFim = DateTime.tryParse(evento.dataFim);
+    final antesDoFim = dataFim != null && DateTime.now().isBefore(dataFim);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Encerrar Evento'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Tem certeza que deseja encerrar o evento "${evento.nome}"? '
+              'Essa ação não pode ser desfeita e vai bloquear novas recargas e vendas.',
+            ),
+            if (antesDoFim) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange.shade200),
                 ),
-                Text(
-                  'Nova Barraca',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.warning_amber_rounded, color: Colors.orange),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'O período do evento ainda não terminou (vai até ${_converterParaBR(evento.dataFim)}). '
+                        'Tem certeza que deseja encerrar mesmo sem ter cumprido o período todo?',
+                        style: const TextStyle(color: Colors.deepOrange, fontSize: 13),
                       ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: nomeController,
-                  decoration: const InputDecoration(
-                    labelText: 'Nome da Barraca',
-                    prefixIcon: Icon(Icons.storefront_outlined),
-                    border: OutlineInputBorder(),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () async {
+              Navigator.pop(ctx);
+
+              final resultado = await ref.read(eventosProvider.notifier).encerrarEvento(evento.id);
+
+              if (context.mounted) {
+                final bool sucesso = resultado['sucesso'] ?? false;
+                final String mensagem = resultado['mensagem'] ?? 'Erro ao encerrar o evento.';
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(mensagem),
+                    backgroundColor: sucesso ? Colors.green : Colors.red,
                   ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: tipoController,
-                  decoration: const InputDecoration(
-                    labelText: 'Tipo (ex: Comida, Bebida)',
-                    prefixIcon: Icon(Icons.category_outlined),
-                    border: OutlineInputBorder(),
+                );
+
+                if (sucesso) {
+                  Navigator.pop(context); // volta pra lista de eventos
+                }
+              }
+            },
+            child: const Text('Encerrar Evento'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- MODAL: CRIAR BARRACA ---
+  void _abrirModalNovaBarraca(BuildContext context, WidgetRef ref) {
+    final nomeController = TextEditingController();
+    final tipoController = TextEditingController();
+    final List<int> vendedoresSelecionados = [];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (modalContext) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(modalContext).viewInsets.bottom + 16,
+              top: 16,
+              left: 16,
+              right: 16,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Vendedores responsáveis',
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  Text(
+                    'Nova Barraca',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                // Lista de vendedores com checkbox (multi-select)
-                Consumer(
-                  builder: (context, ref, _) {
-                    final vendedoresAsync = ref.watch(vendedoresProvider);
- 
-                    return vendedoresAsync.when(
-                      loading: () => const Padding(
-                        padding: EdgeInsets.all(16.0),
-                        child: Center(child: CircularProgressIndicator()),
-                      ),
-                      error: (err, _) => Text('Erro ao carregar vendedores: $err'),
-                      data: (vendedores) {
-                        if (vendedores.isEmpty) {
-                          return const Text(
-                            'Nenhum vendedor cadastrado ainda.',
-                            style: TextStyle(color: Colors.grey),
-                          );
-                        }
- 
-                        return Container(
-                          constraints: const BoxConstraints(maxHeight: 200),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey[300]!),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: ListView(
-                            shrinkWrap: true,
-                            children: vendedores.map((Vendedor v) {
-                              final selecionado = vendedoresSelecionados.contains(v.id);
-                              return CheckboxListTile(
-                                dense: true,
-                                title: Text(v.nome),
-                                subtitle: Text(v.email),
-                                value: selecionado,
-                                onChanged: (marcado) {
-                                  setModalState(() {
-                                    if (marcado == true) {
-                                      vendedoresSelecionados.add(v.id);
-                                    } else {
-                                      vendedoresSelecionados.remove(v.id);
-                                    }
-                                  });
-                                },
-                              );
-                            }).toList(),
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      if (nomeController.text.trim().isNotEmpty && evento.id != null) {
-                        final novaBarraca = Barraca(
-                          nome: nomeController.text.trim(),
-                          tipo: tipoController.text.trim(),
-                          eventoId: evento.id,
-                          vendedorIds: vendedoresSelecionados,
-                        );
- 
-                        final sucesso = await ref
-                            .read(barracaServiceProvider)
-                            .criarBarraca(novaBarraca);
- 
-                        if (sucesso && context.mounted) {
-                          ref.invalidate(barracasProvider(evento.id!));
-                          Navigator.pop(modalContext);
-                        } else if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Erro ao salvar no banco!'),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        }
-                      }
-                    },
-                    child: const Text(
-                      'Salvar Barraca',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: nomeController,
+                    decoration: const InputDecoration(
+                      labelText: 'Nome da Barraca',
+                      prefixIcon: Icon(Icons.storefront_outlined),
+                      border: OutlineInputBorder(),
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    ),
-  );
-}
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: tipoController,
+                    decoration: const InputDecoration(
+                      labelText: 'Tipo (ex: Comida, Bebida)',
+                      prefixIcon: Icon(Icons.category_outlined),
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Vendedores responsáveis',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final vendedoresAsync = ref.watch(vendedoresProvider);
 
-  // --- MODAL: MENU DE OPÇÕES DA BARRACA (EDITAR / EXCLUIR) ---
+                      return vendedoresAsync.when(
+                        loading: () => const Padding(
+                          padding: EdgeInsets.all(16.0),
+                          child: Center(child: CircularProgressIndicator()),
+                        ),
+                        error: (err, _) => Text('Erro ao carregar vendedores: $err'),
+                        data: (vendedores) {
+                          if (vendedores.isEmpty) {
+                            return const Text(
+                              'Nenhum vendedor cadastrado ainda.',
+                              style: TextStyle(color: Colors.grey),
+                            );
+                          }
+
+                          return Container(
+                            constraints: const BoxConstraints(maxHeight: 200),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey[300]!),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: ListView(
+                              shrinkWrap: true,
+                              children: vendedores.map((Vendedor v) {
+                                final selecionado = vendedoresSelecionados.contains(v.id);
+                                return CheckboxListTile(
+                                  dense: true,
+                                  title: Text(v.nome),
+                                  subtitle: Text(v.email),
+                                  value: selecionado,
+                                  onChanged: (marcado) {
+                                    setModalState(() {
+                                      if (marcado == true) {
+                                        vendedoresSelecionados.add(v.id);
+                                      } else {
+                                        vendedoresSelecionados.remove(v.id);
+                                      }
+                                    });
+                                  },
+                                );
+                              }).toList(),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        if (nomeController.text.trim().isNotEmpty && evento.id != null) {
+                          final novaBarraca = Barraca(
+                            nome: nomeController.text.trim(),
+                            tipo: tipoController.text.trim(),
+                            eventoId: evento.id,
+                            vendedorIds: vendedoresSelecionados,
+                          );
+
+                          final sucesso = await ref
+                              .read(barracaServiceProvider)
+                              .criarBarraca(novaBarraca);
+
+                          if (sucesso && context.mounted) {
+                            ref.invalidate(barracasProvider(evento.id!));
+                            Navigator.pop(modalContext);
+                          } else if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Erro ao salvar no banco!'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      child: const Text(
+                        'Salvar Barraca',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // --- MENU INFERIOR AO SEGURAR O CARD ---
   void _exibirOpcoesBarraca(BuildContext context, WidgetRef ref, Barraca barraca) {
     showModalBottomSheet(
       context: context,
@@ -246,177 +329,176 @@ void _abrirModalNovaBarraca(BuildContext context, WidgetRef ref) {
 
   // --- MODAL: EDITAR BARRACA ---
   void _abrirModalEditarBarraca(BuildContext context, WidgetRef ref, Barraca barraca) {
-  final nomeController = TextEditingController(text: barraca.nome);
-  final tipoController = TextEditingController(text: barraca.tipo);
-  // Pré-marca os vendedores que já estão vinculados a essa barraca
-  final List<int> vendedoresSelecionados =
-      barraca.vendedores.map((v) => v.id).toList();
- 
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
-    builder: (modalContext) => StatefulBuilder(
-      builder: (context, setModalState) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(modalContext).viewInsets.bottom + 16,
-            top: 16,
-            left: 16,
-            right: 16,
-          ),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2),
+    final nomeController = TextEditingController(text: barraca.nome);
+    final tipoController = TextEditingController(text: barraca.tipo);
+    final List<int> vendedoresSelecionados =
+        barraca.vendedores.map((v) => v.id).toList();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (modalContext) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(modalContext).viewInsets.bottom + 16,
+              top: 16,
+              left: 16,
+              right: 16,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
-                ),
-                Text(
-                  'Editar Barraca',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: nomeController,
-                  decoration: const InputDecoration(
-                    labelText: 'Nome da Barraca',
-                    prefixIcon: Icon(Icons.storefront_outlined),
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: tipoController,
-                  decoration: const InputDecoration(
-                    labelText: 'Tipo (ex: Comida, Bebida)',
-                    prefixIcon: Icon(Icons.category_outlined),
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Vendedores responsáveis',
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  Text(
+                    'Editar Barraca',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Consumer(
-                  builder: (context, ref, _) {
-                    final vendedoresAsync = ref.watch(vendedoresProvider);
- 
-                    return vendedoresAsync.when(
-                      loading: () => const Padding(
-                        padding: EdgeInsets.all(16.0),
-                        child: Center(child: CircularProgressIndicator()),
-                      ),
-                      error: (err, _) => Text('Erro ao carregar vendedores: $err'),
-                      data: (vendedores) {
-                        if (vendedores.isEmpty) {
-                          return const Text(
-                            'Nenhum vendedor cadastrado ainda.',
-                            style: TextStyle(color: Colors.grey),
-                          );
-                        }
- 
-                        return Container(
-                          constraints: const BoxConstraints(maxHeight: 200),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey[300]!),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: ListView(
-                            shrinkWrap: true,
-                            children: vendedores.map((Vendedor v) {
-                              final selecionado = vendedoresSelecionados.contains(v.id);
-                              return CheckboxListTile(
-                                dense: true,
-                                title: Text(v.nome),
-                                subtitle: Text(v.email),
-                                value: selecionado,
-                                onChanged: (marcado) {
-                                  setModalState(() {
-                                    if (marcado == true) {
-                                      vendedoresSelecionados.add(v.id);
-                                    } else {
-                                      vendedoresSelecionados.remove(v.id);
-                                    }
-                                  });
-                                },
-                              );
-                            }).toList(),
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      if (nomeController.text.trim().isNotEmpty) {
-                        final barracaAtualizada = Barraca(
-                          id: barraca.id,
-                          nome: nomeController.text.trim(),
-                          tipo: tipoController.text.trim(),
-                          eventoId: evento.id,
-                          vendedorIds: vendedoresSelecionados,
-                        );
- 
-                        final sucesso = await ref
-                            .read(barracaServiceProvider)
-                            .editarBarraca(barracaAtualizada);
- 
-                        if (sucesso && context.mounted) {
-                          ref.invalidate(barracasProvider(evento.id!));
-                          Navigator.pop(modalContext);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Barraca atualizada com sucesso!'),
-                              backgroundColor: Colors.green,
-                            ),
-                          );
-                        } else if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Erro ao atualizar a barraca!'),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        }
-                      }
-                    },
-                    child: const Text(
-                      'Salvar Alterações',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: nomeController,
+                    decoration: const InputDecoration(
+                      labelText: 'Nome da Barraca',
+                      prefixIcon: Icon(Icons.storefront_outlined),
+                      border: OutlineInputBorder(),
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: tipoController,
+                    decoration: const InputDecoration(
+                      labelText: 'Tipo (ex: Comida, Bebida)',
+                      prefixIcon: Icon(Icons.category_outlined),
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Vendedores responsáveis',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final vendedoresAsync = ref.watch(vendedoresProvider);
+
+                      return vendedoresAsync.when(
+                        loading: () => const Padding(
+                          padding: EdgeInsets.all(16.0),
+                          child: Center(child: CircularProgressIndicator()),
+                        ),
+                        error: (err, _) => Text('Erro ao carregar vendedores: $err'),
+                        data: (vendedores) {
+                          if (vendedores.isEmpty) {
+                            return const Text(
+                              'Nenhum vendedor cadastrado ainda.',
+                              style: TextStyle(color: Colors.grey),
+                            );
+                          }
+
+                          return Container(
+                            constraints: const BoxConstraints(maxHeight: 200),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey[300]!),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: ListView(
+                              shrinkWrap: true,
+                              children: vendedores.map((Vendedor v) {
+                                final selecionado = vendedoresSelecionados.contains(v.id);
+                                return CheckboxListTile(
+                                  dense: true,
+                                  title: Text(v.nome),
+                                  subtitle: Text(v.email),
+                                  value: selecionado,
+                                  onChanged: (marcado) {
+                                    setModalState(() {
+                                      if (marcado == true) {
+                                        vendedoresSelecionados.add(v.id);
+                                      } else {
+                                        vendedoresSelecionados.remove(v.id);
+                                      }
+                                    });
+                                  },
+                                );
+                              }).toList(),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        if (nomeController.text.trim().isNotEmpty) {
+                          final barracaAtualizada = Barraca(
+                            id: barraca.id,
+                            nome: nomeController.text.trim(),
+                            tipo: tipoController.text.trim(),
+                            eventoId: evento.id,
+                            vendedorIds: vendedoresSelecionados,
+                          );
+
+                          final sucesso = await ref
+                              .read(barracaServiceProvider)
+                              .editarBarraca(barracaAtualizada);
+
+                          if (sucesso && context.mounted) {
+                            ref.invalidate(barracasProvider(evento.id!));
+                            Navigator.pop(modalContext);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Barraca atualizada com sucesso!'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          } else if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Erro ao atualizar a barraca!'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      child: const Text(
+                        'Salvar Alterações',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        );
-      },
-    ),
-  );
-}
+          );
+        },
+      ),
+    );
+  }
 
   // --- DIÁLOGO: CONFIRMAR EXCLUSÃO ---
   void _confirmarExclusaoBarraca(BuildContext context, WidgetRef ref, Barraca barraca) {
@@ -469,6 +551,8 @@ void _abrirModalNovaBarraca(BuildContext context, WidgetRef ref) {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final barracasAsync = ref.watch(barracasProvider(evento.id!));
+    final authState = ref.watch(authProvider);
+    final isOrganizador = authState.perfil == 'organizador';
 
     return Scaffold(
       appBar: AppBar(
@@ -541,6 +625,37 @@ void _abrirModalNovaBarraca(BuildContext context, WidgetRef ref) {
                 ),
               ),
             ),
+            const SizedBox(height: 12),
+
+            // --- BOTÃO / SELO DE ENCERRAMENTO (só organizador) ---
+            if (isOrganizador)
+              evento.encerrado
+                  ? Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Center(
+                        child: Text(
+                          'EVENTO ENCERRADO',
+                          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black54),
+                        ),
+                      ),
+                    )
+                  : SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.red,
+                          side: const BorderSide(color: Colors.red),
+                        ),
+                        onPressed: () => _confirmarEncerramento(context, ref),
+                        icon: const Icon(Icons.stop_circle_outlined),
+                        label: const Text('Encerrar Evento'),
+                      ),
+                    ),
             const SizedBox(height: 20),
 
             // Cabeçalho da Lista

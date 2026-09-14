@@ -37,7 +37,6 @@ class EventosNotifier extends AsyncNotifier<List<Evento>> {
     }
   }
 
-  // --- MÉTODO ADICIONADO PARA CORRIGIR O ERRO DE COMPILAÇÃO ---
   Future<Map<String, dynamic>> criarEvento(Evento novoEvento) async {
     try {
       final token = await storage.read(key: 'jwt_token');
@@ -51,7 +50,7 @@ class EventosNotifier extends AsyncNotifier<List<Evento>> {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        ref.invalidateSelf(); // Invalida o estado para recarregar a lista automaticamente
+        ref.invalidateSelf();
         return {'sucesso': true, 'mensagem': 'Evento criado com sucesso!'};
       }
 
@@ -108,6 +107,30 @@ class EventosNotifier extends AsyncNotifier<List<Evento>> {
 
       final body = jsonDecode(response.body);
       return {'sucesso': false, 'mensagem': body['detail'] ?? 'Erro ao atualizar.'};
+    } catch (e) {
+      return {'sucesso': false, 'mensagem': 'Erro de conexão.'};
+    }
+  }
+
+  // Encerra o evento definitivamente: bloqueia novas recargas/vendas nele.
+  Future<Map<String, dynamic>> encerrarEvento(int eventoId) async {
+    try {
+      final token = await storage.read(key: 'jwt_token');
+      final response = await http.put(
+        Uri.parse('$baseUrl/eventos/$eventoId/encerrar'),
+        headers: {
+          'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        ref.invalidateSelf();
+        return {'sucesso': true, 'mensagem': 'Evento encerrado com sucesso.'};
+      }
+
+      final body = jsonDecode(response.body);
+      return {'sucesso': false, 'mensagem': body['detail'] ?? 'Erro ao encerrar o evento.'};
     } catch (e) {
       return {'sucesso': false, 'mensagem': 'Erro de conexão.'};
     }

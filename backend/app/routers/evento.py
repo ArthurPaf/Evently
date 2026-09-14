@@ -116,3 +116,25 @@ def deletar_evento(
     db.delete(evento)
     db.commit()
     return None
+
+
+@router.put("/{evento_id}/encerrar", response_model=evento_schema.EventoResponse)
+def encerrar_evento(
+    evento_id: int,
+    db: Session = Depends(get_db),
+    usuario: dict = Depends(_exigir_organizador),  # só o organizador dono pode encerrar
+):
+    evento = db.query(Evento).filter(Evento.id == evento_id).first()
+
+    if not evento:
+        raise HTTPException(status_code=404, detail="Evento não encontrado.")
+
+    if evento.organizador_id != usuario["id"]:
+        raise HTTPException(
+            status_code=403, detail="Sem permissão para encerrar este evento."
+        )
+
+    if evento.encerrado:
+        raise HTTPException(status_code=400, detail="Este evento já está encerrado.")
+
+    return EventoDAO.encerrar_evento(db, evento_id)

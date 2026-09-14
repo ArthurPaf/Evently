@@ -15,6 +15,7 @@ class EventoCreate(EventoBase):
 class EventoResponse(EventoBase):
     id: int
     organizador_id: int
+    encerrado: bool = False
     administradores: List[AdministradorResponse] = []
 
     class Config:

@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
-from app.models import Carteira, Transacao, ItemTransacao, TipoTransacao, Produto, Barraca
+from app.models import Carteira, Transacao, ItemTransacao, TipoTransacao, Produto, Barraca, Evento
 from app.schemas.carteira_schema import RecargaCreate, VendaCreate
 
 
@@ -44,6 +44,10 @@ def realizar_recarga(
     if dados.valor <= 0:
         raise HTTPException(status_code=400, detail="O valor da recarga deve ser maior que zero.")
 
+    evento = db.query(Evento).filter(Evento.id == evento_id).first()
+    if evento and evento.encerrado:
+        raise HTTPException(status_code=400, detail="Este evento já foi encerrado.")
+
     carteira = buscar_carteira_por_codigo(db, evento_id, dados.codigo_identificador)
     carteira.saldo_digital += dados.valor
 
@@ -70,6 +74,10 @@ def realizar_recarga_propria(
     if valor <= 0:
         raise HTTPException(status_code=400, detail="O valor deve ser maior que zero.")
 
+    evento = db.query(Evento).filter(Evento.id == evento_id).first()
+    if evento and evento.encerrado:
+        raise HTTPException(status_code=400, detail="Este evento já foi encerrado.")
+
     carteira, _ = buscar_ou_criar_carteira(db, cliente_id, evento_id)
     carteira.saldo_digital += valor
 
@@ -91,6 +99,9 @@ def realizar_venda(
     barraca = db.query(Barraca).filter(Barraca.id == barraca_id).first()
     if not barraca:
         raise HTTPException(status_code=404, detail="Barraca não encontrada.")
+
+    if barraca.evento and barraca.evento.encerrado:
+        raise HTTPException(status_code=400, detail="Este evento já foi encerrado.")
 
     if not dados.itens:
         raise HTTPException(status_code=400, detail="A venda precisa ter ao menos um item.")

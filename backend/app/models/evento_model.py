@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Table
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Boolean, Table
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -19,6 +19,7 @@ class Evento(Base):
     data_inicio = Column(DateTime, nullable=True)
     data_fim = Column(DateTime, nullable=True)
     organizador_id = Column(Integer, ForeignKey("usuarios.id"))
+    encerrado = Column(Boolean, nullable=False, default=False)
 
     organizador = relationship("Usuario", back_populates="eventos")
     barracas = relationship(
