@@ -8405,3 +8405,61 @@ smtplib.SMTPAuthenticationError: (535, b'5.7.8 Username and Password not accepte
 2026-09-14 20:30:23,982 [INFO] HTTP GET /clientes/carteiras/7/extrato | Status: 200 | Tempo: 9.36ms
 2026-09-14 20:31:23,967 [INFO] HTTP POST /clientes/eventos/7/entrar | Status: 200 | Tempo: 3.94ms
 2026-09-14 20:31:23,987 [INFO] HTTP GET /clientes/carteiras/7/extrato | Status: 200 | Tempo: 11.42ms
+2026-09-19 12:18:28,955 [INFO] === SISTEMA INICIADO E LOGS EM ARQUIVO ATIVADOS ===
+2026-09-19 12:22:11,816 [INFO] HTTP POST /auth/login | Status: 200 | Tempo: 632.25ms
+2026-09-19 12:22:11,824 [INFO] HTTP OPTIONS /auth/me | Status: 200 | Tempo: 0.29ms
+2026-09-19 12:22:11,835 [INFO] HTTP GET /auth/me | Status: 200 | Tempo: 8.19ms
+2026-09-19 12:22:11,901 [INFO] HTTP OPTIONS /eventos/ | Status: 200 | Tempo: 0.25ms
+2026-09-19 12:22:11,953 [INFO] HTTP GET /eventos/ | Status: 200 | Tempo: 50.46ms
+2026-09-19 12:27:22,610 [INFO] HTTP OPTIONS /eventos/6/barracas/ | Status: 200 | Tempo: 0.34ms
+2026-09-19 12:27:22,643 [INFO] Buscando barracas do evento ID 6
+2026-09-19 12:27:22,651 [INFO] HTTP GET /eventos/6/barracas/ | Status: 200 | Tempo: 29.98ms
+2026-09-19 12:27:34,163 [INFO] HTTP OPTIONS /eventos/5/barracas/ | Status: 200 | Tempo: 0.19ms
+2026-09-19 12:27:34,167 [INFO] Buscando barracas do evento ID 5
+2026-09-19 12:27:34,175 [INFO] HTTP GET /eventos/5/barracas/ | Status: 200 | Tempo: 9.25ms
+2026-09-19 12:27:36,216 [INFO] HTTP OPTIONS /barracas/10/produtos/ | Status: 200 | Tempo: 0.23ms
+2026-09-19 12:27:36,250 [INFO] HTTP GET /barracas/10/produtos/ | Status: 200 | Tempo: 27.30ms
+2026-09-19 12:27:40,363 [INFO] HTTP OPTIONS /eventos/5/encerrar | Status: 200 | Tempo: 0.25ms
+2026-09-19 12:27:40,383 [INFO] HTTP PUT /eventos/5/encerrar | Status: 200 | Tempo: 17.67ms
+2026-09-19 12:27:40,419 [INFO] HTTP GET /eventos/ | Status: 200 | Tempo: 8.77ms
+2026-09-19 12:28:01,727 [INFO] HTTP OPTIONS /admin/administradores | Status: 200 | Tempo: 0.20ms
+2026-09-19 12:28:01,760 [INFO] HTTP GET /admin/administradores | Status: 200 | Tempo: 19.76ms
+2026-09-19 12:33:28,294 [INFO] HTTP POST /auth/login | Status: 200 | Tempo: 363.57ms
+2026-09-19 12:33:28,307 [INFO] HTTP OPTIONS /auth/me | Status: 200 | Tempo: 0.28ms
+2026-09-19 12:33:28,314 [INFO] HTTP GET /auth/me | Status: 200 | Tempo: 3.78ms
+2026-09-19 12:33:28,369 [INFO] HTTP OPTIONS /eventos/ | Status: 200 | Tempo: 0.27ms
+2026-09-19 12:33:28,381 [INFO] HTTP GET /eventos/ | Status: 200 | Tempo: 8.69ms
+2026-09-19 12:34:13,133 [INFO] HTTP OPTIONS /eventos/5/dashboard | Status: 200 | Tempo: 0.23ms
+2026-09-19 12:34:13,195 [INFO] HTTP GET /eventos/5/dashboard | Status: 200 | Tempo: 59.82ms
+2026-09-19 12:41:41,682 [INFO] HTTP POST /auth/login | Status: 200 | Tempo: 394.82ms
+2026-09-19 12:41:41,694 [INFO] HTTP GET /auth/me | Status: 200 | Tempo: 4.03ms
+2026-09-19 12:41:41,758 [INFO] HTTP GET /eventos/ | Status: 200 | Tempo: 8.30ms
+2026-09-19 12:41:53,297 [INFO] HTTP OPTIONS /eventos/2/barracas/ | Status: 200 | Tempo: 0.24ms
+2026-09-19 12:41:53,302 [INFO] Buscando barracas do evento ID 2
+2026-09-19 12:41:53,308 [INFO] HTTP GET /eventos/2/barracas/ | Status: 200 | Tempo: 7.01ms
+2026-09-19 12:42:14,011 [INFO] HTTP GET /eventos/2/basico | Status: 200 | Tempo: 3.15ms
+2026-09-19 12:46:54,982 [INFO] HTTP POST /auth/login | Status: 200 | Tempo: 356.67ms
+2026-09-19 12:46:54,990 [INFO] HTTP OPTIONS /auth/me | Status: 200 | Tempo: 0.25ms
+2026-09-19 12:46:54,999 [INFO] HTTP GET /auth/me | Status: 200 | Tempo: 4.31ms
+2026-09-19 12:46:55,067 [INFO] HTTP OPTIONS /eventos/ | Status: 200 | Tempo: 0.32ms
+2026-09-19 12:46:55,078 [INFO] HTTP GET /eventos/ | Status: 200 | Tempo: 8.79ms
+2026-09-19 12:46:56,791 [INFO] Buscando barracas do evento ID 2
+2026-09-19 12:46:56,797 [INFO] HTTP GET /eventos/2/barracas/ | Status: 200 | Tempo: 7.69ms
+2026-09-19 12:47:35,238 [INFO] HTTP OPTIONS /eventos/7/barracas/ | Status: 200 | Tempo: 0.24ms
+2026-09-19 12:47:35,242 [INFO] Buscando barracas do evento ID 7
+2026-09-19 12:47:35,247 [INFO] HTTP GET /eventos/7/barracas/ | Status: 200 | Tempo: 6.69ms
+2026-09-19 12:49:26,032 [INFO] HTTP OPTIONS /eventos/6/barracas/ | Status: 200 | Tempo: 0.30ms
+2026-09-19 12:49:26,037 [INFO] Buscando barracas do evento ID 6
+2026-09-19 12:49:26,040 [INFO] HTTP GET /eventos/6/barracas/ | Status: 200 | Tempo: 5.30ms
+2026-09-19 12:49:28,644 [INFO] HTTP OPTIONS /eventos/6/dashboard | Status: 200 | Tempo: 0.30ms
+2026-09-19 12:49:28,665 [INFO] HTTP GET /eventos/6/dashboard | Status: 200 | Tempo: 11.43ms
+2026-09-19 12:49:33,512 [INFO] HTTP GET /eventos/6/dashboard | Status: 200 | Tempo: 13.18ms
+2026-09-19 12:49:43,750 [INFO] HTTP OPTIONS /eventos/5/barracas/ | Status: 200 | Tempo: 0.28ms
+2026-09-19 12:49:43,753 [INFO] Buscando barracas do evento ID 5
+2026-09-19 12:49:43,757 [INFO] HTTP GET /eventos/5/barracas/ | Status: 200 | Tempo: 5.83ms
+2026-09-19 12:49:44,375 [INFO] HTTP OPTIONS /barracas/10/produtos/ | Status: 200 | Tempo: 0.20ms
+2026-09-19 12:49:44,388 [INFO] HTTP GET /barracas/10/produtos/ | Status: 200 | Tempo: 3.97ms
+2026-09-19 12:50:01,171 [INFO] HTTP OPTIONS /eventos/2/dashboard | Status: 200 | Tempo: 0.23ms
+2026-09-19 12:50:01,188 [INFO] HTTP GET /eventos/2/dashboard | Status: 200 | Tempo: 14.49ms
+2026-09-19 12:50:29,903 [INFO] HTTP OPTIONS /barracas/9/produtos/ | Status: 200 | Tempo: 0.26ms
+2026-09-19 12:50:29,908 [INFO] HTTP GET /barracas/9/produtos/ | Status: 200 | Tempo: 3.25ms

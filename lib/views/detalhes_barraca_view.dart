@@ -6,8 +6,13 @@ import '../providers/produto_provider.dart';
 
 class DetalhesBarracaView extends ConsumerWidget {
   final Barraca barraca;
+  final bool somenteLeitura;
 
-  const DetalhesBarracaView({super.key, required this.barraca});
+  const DetalhesBarracaView({
+    super.key,
+    required this.barraca,
+    this.somenteLeitura = false,
+  });
 
   // --- MODAL: CRIAR PRODUTO ---
   void _abrirModalNovoProduto(BuildContext context, WidgetRef ref) {
@@ -380,11 +385,12 @@ class DetalhesBarracaView extends ConsumerWidget {
                         fontWeight: FontWeight.bold,
                       ),
                 ),
-                ElevatedButton.icon(
-                  onPressed: () => _abrirModalNovoProduto(context, ref),
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Produto'),
-                ),
+                if (!somenteLeitura)
+                  ElevatedButton.icon(
+                    onPressed: () => _abrirModalNovoProduto(context, ref),
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('Produto'),
+                  ),
               ],
             ),
             const SizedBox(height: 10),
@@ -438,9 +444,11 @@ class DetalhesBarracaView extends ConsumerWidget {
                                 color: Colors.green,
                               ),
                             ),
-                            onLongPress: () {
-                              _exibirOpcoesProduto(context, ref, item);
-                            },
+                            onLongPress: somenteLeitura
+                                ? null
+                                : () {
+                                    _exibirOpcoesProduto(context, ref, item);
+                                  },
                           ),
                         );
                       },

@@ -1,6 +1,11 @@
+import 'dart:html' as html;
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_application/services/barraca_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../models/evento_model.dart';
 import '../models/barraca_model.dart';
 import '../providers/barraca_provider.dart';
@@ -12,8 +17,9 @@ import 'detalhes_barraca_view.dart'; // Tela para cadastro/visualização de pro
 
 class DetalhesEventoView extends ConsumerWidget {
   final Evento evento;
+  final GlobalKey _qrKey = GlobalKey();
 
-  const DetalhesEventoView({super.key, required this.evento});
+  DetalhesEventoView({super.key, required this.evento});
 
   // --- FORMATAÇÃO DE DATA BR COM DateTime.tryParse ---
   String _converterParaBR(String dataISO) {
@@ -28,6 +34,154 @@ class DetalhesEventoView extends ConsumerWidget {
     } catch (_) {
       return dataISO;
     }
+  }
+
+  // Monta o link público que o cliente usa para se cadastrar/entrar no evento.
+  // Uri.base pega a origem atual (ex: http://localhost:5000) automaticamente,
+  // então funciona tanto em desenvolvimento quanto depois de publicado.
+  String _linkDoEvento() {
+    return '${Uri.base.origin}/evento/${evento.id}';
+  }
+
+  void _copiarLink(BuildContext context) {
+    Clipboard.setData(ClipboardData(text: _linkDoEvento()));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Link copiado!'), backgroundColor: Colors.green),
+    );
+  }
+
+  // Captura o QR Code renderizado na tela e baixa como arquivo .png de
+  // verdade, pronto pra imprimir ou compartilhar fora do app.
+  Future<void> _baixarQrCode(BuildContext context) async {
+    try {
+      final boundary =
+          _qrKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary == null) return;
+
+      // pixelRatio alto garante boa resolução para impressão
+      final image = await boundary.toImage(pixelRatio: 4.0);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) return;
+      final bytes = byteData.buffer.asUint8List();
+
+      final blob = html.Blob([bytes], 'image/png');
+      final url = html.Url.createObjectUrlFromBlob(blob);
+      html.AnchorElement(href: url)
+        ..setAttribute('download', 'qrcode_${evento.nome}.png'.replaceAll(' ', '_'))
+        ..click();
+      html.Url.revokeObjectUrl(url);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('QR Code baixado!'), backgroundColor: Colors.green),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao baixar QR Code: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  // --- CARD: LINK DE ACESSO PARA CLIENTES (organizador e administrador) ---
+  Widget _buildCardLinkCliente(BuildContext context) {
+    final link = _linkDoEvento();
+
+    return Card(
+      elevation: 0,
+      color: Colors.blue.shade50,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.blue.shade100),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.link, color: Colors.blue.shade700, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'Link de acesso para clientes',
+                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue.shade700),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Compartilhe este link (ou o QR Code) para que os clientes se cadastrem e acessem o saldo digital deste evento.',
+              style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: Text(
+                      link,
+                      style: const TextStyle(fontSize: 13),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton.filled(
+                  onPressed: () => _copiarLink(context),
+                  icon: const Icon(Icons.copy, size: 18),
+                  tooltip: 'Copiar link',
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Center(
+              child: RepaintBoundary(
+                key: _qrKey,
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: QrImageView(
+                    data: link,
+                    version: QrVersions.auto,
+                    size: 150,
+                    backgroundColor: Colors.white,
+                    eyeStyle: const QrEyeStyle(color: Colors.black),
+                    dataModuleStyle: const QrDataModuleStyle(color: Colors.black),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Center(
+              child: OutlinedButton.icon(
+                onPressed: () => _baixarQrCode(context),
+                icon: const Icon(Icons.download_outlined, size: 18),
+                label: const Text('Baixar QR Code (PNG)'),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Center(
+              child: Text(
+                'Salve a imagem para imprimir em cartazes ou compartilhar',
+                style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   // --- DIÁLOGO: CONFIRMAR ENCERRAMENTO DO EVENTO ---
@@ -627,6 +781,12 @@ class DetalhesEventoView extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
 
+            // --- LINK DE ACESSO PARA CLIENTES (só enquanto o evento está ativo) ---
+            if (!evento.encerrado) ...[
+              _buildCardLinkCliente(context),
+              const SizedBox(height: 12),
+            ],
+
             // --- BOTÃO / SELO DE ENCERRAMENTO (só organizador) ---
             if (isOrganizador)
               evento.encerrado
@@ -668,11 +828,12 @@ class DetalhesEventoView extends ConsumerWidget {
                         fontWeight: FontWeight.bold,
                       ),
                 ),
-                ElevatedButton.icon(
-                  onPressed: () => _abrirModalNovaBarraca(context, ref),
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Barraca'),
-                ),
+                if (!evento.encerrado)
+                  ElevatedButton.icon(
+                    onPressed: () => _abrirModalNovaBarraca(context, ref),
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('Barraca'),
+                  ),
               ],
             ),
             const SizedBox(height: 10),
@@ -726,13 +887,18 @@ class DetalhesEventoView extends ConsumerWidget {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => DetalhesBarracaView(barraca: item),
+                                  builder: (context) => DetalhesBarracaView(
+                                    barraca: item,
+                                    somenteLeitura: evento.encerrado,
+                                  ),
                                 ),
                               );
                             },
-                            onLongPress: () {
-                              _exibirOpcoesBarraca(context, ref, item);
-                            },
+                            onLongPress: evento.encerrado
+                                ? null
+                                : () {
+                                    _exibirOpcoesBarraca(context, ref, item);
+                                  },
                           ),
                         );
                       },

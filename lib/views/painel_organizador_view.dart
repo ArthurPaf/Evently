@@ -14,10 +14,29 @@ import 'dashboard_view.dart';
 import 'recarga_view.dart';
 import 'configuracoes_view.dart';
 
-class PainelOrganizadorView extends ConsumerWidget {
+class PainelOrganizadorView extends ConsumerStatefulWidget {
   const PainelOrganizadorView({super.key});
 
-  // --- FUNÇÃO AUXILIAR DE FORMATAÇÃO DE DATA BR ---
+  @override
+  ConsumerState<PainelOrganizadorView> createState() => _PainelOrganizadorViewState();
+}
+
+class _PainelOrganizadorViewState extends ConsumerState<PainelOrganizadorView>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
   String _converterParaBR(String dataISO) {
     if (dataISO.isEmpty) return '';
     try {
@@ -51,8 +70,7 @@ class PainelOrganizadorView extends ConsumerWidget {
     return DateTime.now();
   }
 
-  // --- MENU INFERIOR AO SEGURAR O CARD ---
-  void _exibirOpcoesEvento(BuildContext context, WidgetRef ref, Evento evento) {
+  void _exibirOpcoesEventoAtivo(BuildContext context, WidgetRef ref, Evento evento) {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -129,7 +147,50 @@ class PainelOrganizadorView extends ConsumerWidget {
     );
   }
 
-  // --- CONFIRMAÇÃO E EXCLUSÃO NA API ---
+  void _exibirOpcoesEventoEncerrado(BuildContext context, Evento evento) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.dashboard_outlined, color: Colors.deepPurple),
+                title: const Text('Dashboard Financeiro'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => DashboardView(
+                        eventoId: evento.id,
+                        nomeEvento: evento.nome,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   void _confirmarExclusao(BuildContext context, WidgetRef ref, Evento evento) {
     showDialog(
       context: context,
@@ -172,7 +233,6 @@ class PainelOrganizadorView extends ConsumerWidget {
     );
   }
 
-  // --- CONFIRMAÇÃO E EDIÇÃO NA API COM CALENDÁRIO ---
   void _confirmarEdicao(BuildContext context, WidgetRef ref, Evento evento) {
     final nomeController = TextEditingController(text: evento.nome);
     final localController = TextEditingController(text: evento.local);
@@ -180,7 +240,6 @@ class PainelOrganizadorView extends ConsumerWidget {
     String dataInicioBR = _converterParaBR(evento.dataInicio);
     String dataFimBR = _converterParaBR(evento.dataFim);
 
-    // Pré-marca os administradores já vinculados a esse evento
     final List<int> administradoresSelecionados =
         evento.administradores.map((a) => a.id).toList();
 
@@ -406,8 +465,55 @@ class PainelOrganizadorView extends ConsumerWidget {
     );
   }
 
+  Widget _listaDeEventos(List<Evento> eventos, {required bool encerrados}) {
+    if (eventos.isEmpty) {
+      return Center(
+        child: Text(
+          encerrados ? 'Nenhum evento encerrado ainda.' : 'Nenhum evento ativo.',
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      itemCount: eventos.length,
+      itemBuilder: (context, index) {
+        final evento = eventos[index];
+        return Card(
+          elevation: 1,
+          margin: const EdgeInsets.symmetric(vertical: 6),
+          child: ListTile(
+            title: Text(
+              evento.nome,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            subtitle: Text(
+              '${_converterParaBR(evento.dataInicio)} até ${_converterParaBR(evento.dataFim)}',
+            ),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => DetalhesEventoView(evento: evento),
+                ),
+              );
+            },
+            onLongPress: () {
+              if (encerrados) {
+                _exibirOpcoesEventoEncerrado(context, evento);
+              } else {
+                _exibirOpcoesEventoAtivo(context, ref, evento);
+              }
+            },
+          ),
+        );
+      },
+    );
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
     final eventosAsync = ref.watch(eventosProvider);
 
@@ -429,6 +535,16 @@ class PainelOrganizadorView extends ConsumerWidget {
               },
             );
           },
+        ),
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: Colors.white,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white, 
+          tabs: const [
+            Tab(text: 'Ativos',),
+            Tab(text: 'Encerrados'),
+          ],
         ),
       ),
       drawer: Drawer(
@@ -504,75 +620,21 @@ class PainelOrganizadorView extends ConsumerWidget {
           ],
         ),
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Olá, $nomeUsuario 👋',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Gerencie seus eventos. Segure um card para ver o dashboard, recarregar saldo, editar ou excluir.',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey[600],
-                      ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: eventosAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, stack) => Center(child: Text('Erro ao carregar: $err')),
-              data: (eventos) {
-                if (eventos.isEmpty) {
-                  return const Center(child: Text('Nenhum evento cadastrado.'));
-                }
+      body: eventosAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, stack) => Center(child: Text('Erro ao carregar: $err')),
+        data: (eventos) {
+          final ativos = eventos.where((e) => !e.encerrado).toList();
+          final encerrados = eventos.where((e) => e.encerrado).toList();
 
-                return ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  itemCount: eventos.length,
-                  itemBuilder: (context, index) {
-                    final evento = eventos[index];
-                    return Card(
-                      elevation: 1,
-                      margin: const EdgeInsets.symmetric(vertical: 6),
-                      child: ListTile(
-                        title: Text(
-                          evento.nome,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        subtitle: Text(
-                          '${_converterParaBR(evento.dataInicio)} até ${_converterParaBR(evento.dataFim)}',
-                        ),
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => DetalhesEventoView(evento: evento),
-                            ),
-                          );
-                        },
-                        onLongPress: () {
-                          _exibirOpcoesEvento(context, ref, evento);
-                        },
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-        ],
+          return TabBarView(
+            controller: _tabController,
+            children: [
+              _listaDeEventos(ativos, encerrados: false),
+              _listaDeEventos(encerrados, encerrados: true),
+            ],
+          );
+        },
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
