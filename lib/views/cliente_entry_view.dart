@@ -4,7 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import '../models/evento_model.dart';
 import '../providers/auth_provider.dart';
-import 'painel_cliente_view.dart'; // reaproveita a MinhaCarteiraView
+import 'painel_cliente_view.dart';
+import 'package:flutter_application/views/esqueci_senha_view.dart'; 
 
 const String _baseUrl = 'http://127.0.0.1:8000';
 
@@ -270,6 +271,16 @@ class _ClienteEntryViewState extends ConsumerState<ClienteEntryView> {
                             : 'Ainda não tenho conta — Cadastrar',
                       ),
                     ),
+                    const SizedBox(height: 8),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const EsqueciSenhaView()),
+                          );
+                        },
+                        child: const Text('Esqueci minha senha'),
+                      ),
                   ],
                 ),
               ),

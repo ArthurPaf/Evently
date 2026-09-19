@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_web_plugins/flutter_web_plugins.dart';
 import 'package:flutter_application/screens/login_screen.dart';
 import 'package:flutter_application/views/cliente_entry_view.dart';
+import 'package:flutter_application/views/redefinir_senha_view.dart';
 import 'package:flutter_application/providers/theme_provider.dart';
 
 void main() {
@@ -41,6 +42,16 @@ class MyApp extends ConsumerWidget {
       // Sem "home": a rota inicial é lida direto da URL do navegador.
       onGenerateRoute: (settings) {
         final uri = Uri.parse(settings.name ?? '/');
+
+        // Link de redefinição de senha: /redefinir-senha?token=xxxx
+        if (uri.path == '/redefinir-senha') {
+          final token = uri.queryParameters['token'];
+          if (token != null && token.isNotEmpty) {
+            return MaterialPageRoute(
+              builder: (_) => RedefinirSenhaView(token: token),
+            );
+          }
+        }
 
         // Link público do cliente: /evento/{id}
         // Este é o único "lugar" que o público do evento deve acessar —

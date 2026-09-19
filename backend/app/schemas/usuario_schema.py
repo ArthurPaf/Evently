@@ -62,5 +62,13 @@ class AdministradorResponse(BaseModel):
     nome: str
     email: str
  
-    class Config:
-        from_attributes = True
+class Config:
+    from_attributes = True
+
+class EsqueciSenhaRequest(BaseModel):
+    email: EmailStr
+ 
+ 
+class RedefinirSenhaRequest(BaseModel):
+    token: str
+    nova_senha: str

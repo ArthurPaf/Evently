@@ -15,6 +15,7 @@ SMTP_PORT = int(os.environ.get("SMTP_PORT", "465"))
 SMTP_USER = os.environ.get("SMTP_USER")
 SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")
 SMTP_FROM_NAME = os.environ.get("SMTP_FROM_NAME", "Evently")
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:5000")
 
 
 def _gerar_qr_code_bytes(conteudo: str) -> bytes:
@@ -69,6 +70,55 @@ def _gerar_pdf_cartao(qr_bytes: bytes, nome_cliente: str, nome_evento: str, codi
     c.save()
     buffer.seek(0)
     return buffer.getvalue()
+
+
+def enviar_email_recuperacao_senha(destinatario: str, nome_usuario: str, link_redefinicao: str) -> None:
+    """
+    Envia o link de redefinição de senha por e-mail. Assim como o cartão
+    virtual, uma falha aqui nunca deve travar o fluxo — só é logada.
+    """
+    if not SMTP_USER or not SMTP_PASSWORD:
+        logger.warning(
+            "Envio de e-mail não configurado (SMTP_USER/SMTP_PASSWORD ausentes). "
+            f"Recuperação de senha de {destinatario} não foi enviada."
+        )
+        return
+
+    try:
+        mensagem = MIMEMultipart("alternative")
+        mensagem["Subject"] = "Recuperação de senha - Evently"
+        mensagem["From"] = f"{SMTP_FROM_NAME} <{SMTP_USER}>"
+        mensagem["To"] = destinatario
+
+        html = f"""
+        <html>
+          <body style="font-family: Arial, sans-serif;">
+            <h2>Olá, {nome_usuario}!</h2>
+            <p>Recebemos uma solicitação para redefinir a senha da sua conta no Evently.</p>
+            <p>
+              <a href="{link_redefinicao}"
+                 style="background-color: #6A1B9A; color: white; padding: 10px 20px;
+                        text-decoration: none; border-radius: 6px; display: inline-block;">
+                Redefinir minha senha
+              </a>
+            </p>
+            <p style="color: #888; font-size: 12px;">
+              Este link expira em 30 minutos. Se você não solicitou essa alteração,
+              pode ignorar este e-mail com segurança — sua senha não será alterada.
+            </p>
+          </body>
+        </html>
+        """
+        mensagem.attach(MIMEText(html, "html"))
+
+        contexto = ssl.create_default_context()
+        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, context=contexto) as servidor:
+            servidor.login(SMTP_USER, SMTP_PASSWORD)
+            servidor.sendmail(SMTP_USER, destinatario, mensagem.as_string())
+
+        logger.info(f"E-mail de recuperação de senha enviado para {destinatario}")
+    except Exception as e:
+        logger.error(f"Falha ao enviar recuperação de senha para {destinatario}: {str(e)}", exc_info=True)
 
 
 def enviar_cartao_virtual(destinatario: str, nome_cliente: str, nome_evento: str, codigo: str) -> None:
