@@ -43,12 +43,15 @@ class MyApp extends ConsumerWidget {
       onGenerateRoute: (settings) {
         final uri = Uri.parse(settings.name ?? '/');
 
-        // Link de redefinição de senha: /redefinir-senha?token=xxxx
+        // Link de redefinição de senha: /redefinir-senha?token=xxxx&evento_id=3
         if (uri.path == '/redefinir-senha') {
           final token = uri.queryParameters['token'];
+          final eventoIdParam = uri.queryParameters['evento_id'];
+          final eventoId = eventoIdParam != null ? int.tryParse(eventoIdParam) : null;
+
           if (token != null && token.isNotEmpty) {
             return MaterialPageRoute(
-              builder: (_) => RedefinirSenhaView(token: token),
+              builder: (_) => RedefinirSenhaView(token: token, eventoId: eventoId),
             );
           }
         }

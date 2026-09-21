@@ -5,7 +5,9 @@ import 'package:http/http.dart' as http;
 const String _baseUrl = 'http://127.0.0.1:8000';
 
 class EsqueciSenhaView extends StatefulWidget {
-  const EsqueciSenhaView({super.key});
+  final int? eventoId; // presente quando aberto a partir da tela do cliente
+
+  const EsqueciSenhaView({super.key, this.eventoId});
 
   @override
   State<EsqueciSenhaView> createState() => _EsqueciSenhaViewState();
@@ -32,7 +34,10 @@ class _EsqueciSenhaViewState extends State<EsqueciSenhaView> {
       await http.post(
         Uri.parse('$_baseUrl/auth/esqueci-senha'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': _emailController.text.trim()}),
+        body: jsonEncode({
+          'email': _emailController.text.trim(),
+          if (widget.eventoId != null) 'evento_id': widget.eventoId,
+        }),
       );
 
       // O backend sempre responde com a mesma mensagem genérica,
@@ -78,7 +83,7 @@ class _EsqueciSenhaViewState extends State<EsqueciSenhaView> {
                       const SizedBox(height: 24),
                       TextButton(
                         onPressed: () => Navigator.pop(context),
-                        child: const Text('Voltar para o login'),
+                        child: const Text('Voltar'),
                       ),
                     ],
                   )

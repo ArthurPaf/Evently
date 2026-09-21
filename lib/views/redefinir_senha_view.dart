@@ -2,13 +2,15 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../screens/login_screen.dart';
+import 'cliente_entry_view.dart';
 
 const String _baseUrl = 'http://127.0.0.1:8000';
 
 class RedefinirSenhaView extends StatefulWidget {
   final String token;
+  final int? eventoId; // presente quando o link veio da tela do cliente
 
-  const RedefinirSenhaView({super.key, required this.token});
+  const RedefinirSenhaView({super.key, required this.token, this.eventoId});
 
   @override
   State<RedefinirSenhaView> createState() => _RedefinirSenhaViewState();
@@ -68,6 +70,22 @@ class _RedefinirSenhaViewState extends State<RedefinirSenhaView> {
     }
   }
 
+  void _irParaOLoginCorreto() {
+    if (widget.eventoId != null) {
+      // Veio da tela do cliente: volta pro login daquele evento específico,
+      // não pro login da equipe.
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => ClienteEntryView(eventoId: widget.eventoId!)),
+        (route) => false,
+      );
+    } else {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (route) => false,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -96,12 +114,7 @@ class _RedefinirSenhaViewState extends State<RedefinirSenhaView> {
                       SizedBox(
                         height: 48,
                         child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.of(context).pushAndRemoveUntil(
-                              MaterialPageRoute(builder: (_) => const LoginScreen()),
-                              (route) => false,
-                            );
-                          },
+                          onPressed: _irParaOLoginCorreto,
                           child: const Text('Ir para o login'),
                         ),
                       ),

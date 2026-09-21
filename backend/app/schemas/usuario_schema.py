@@ -67,7 +67,7 @@ class Config:
 
 class EsqueciSenhaRequest(BaseModel):
     email: EmailStr
- 
+    evento_id: Optional[int] = None 
  
 class RedefinirSenhaRequest(BaseModel):
     token: str

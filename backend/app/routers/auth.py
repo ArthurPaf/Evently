@@ -17,16 +17,12 @@ router = APIRouter(prefix="/auth", tags=["Autenticação"])
 
 @router.post("/registrar", response_model=UserResponse)
 def registrar_usuario(user: UserCreate, db: Session = Depends(get_db)):
-    # Verifica se o email já existe
     db_user = db.query(models.Usuario).filter(models.Usuario.email == user.email).first()
     if db_user:
         raise HTTPException(status_code=400, detail="Email já cadastrado.")
 
     # SEGURANÇA: esta rota é pública (sem autenticação), então o perfil é
     # sempre forçado para CLIENTE, ignorando qualquer valor enviado no body.
-    # Organizador, administrador e vendedor só podem ser criados pelas rotas
-    # protegidas específicas (/admin/vendedores, /admin/administradores) ou
-    # diretamente no banco, no caso do primeiro organizador do sistema.
     hashed_password = security.get_password_hash(user.senha)
     novo_usuario = models.Usuario(
         nome=user.nome,
@@ -77,7 +73,7 @@ def esqueci_senha(
 ):
     """
     Sempre retorna a mesma mensagem genérica, exista ou não o e-mail no
-    banco — isso evita que alguém descubra quais e-mails estão cadastrados
+    banco — evita que alguém descubra quais e-mails estão cadastrados
     testando essa rota (enumeration attack).
     """
     usuario = db.query(models.Usuario).filter(models.Usuario.email == dados.email).first()
@@ -93,6 +89,12 @@ def esqueci_senha(
         db.refresh(token_registro)
 
         link = f"{FRONTEND_URL}/redefinir-senha?token={token_registro.token}"
+        # Se a solicitação veio da tela do cliente (dentro de um evento
+        # específico), carrega o evento_id no link para saber trazer o
+        # cliente de volta para a tela daquele evento depois de redefinir.
+        if dados.evento_id is not None:
+            link += f"&evento_id={dados.evento_id}"
+
         background_tasks.add_task(
             enviar_email_recuperacao_senha, usuario.email, usuario.nome, link
         )

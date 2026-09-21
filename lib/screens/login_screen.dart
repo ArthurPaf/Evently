@@ -4,6 +4,7 @@ import 'package:flutter_application/providers/auth_provider.dart';
 import 'package:flutter_application/views/painel_organizador_view.dart';
 import 'package:flutter_application/views/painel_vendedor_view.dart';
 import 'package:flutter_application/views/painel_administrador_view.dart';
+import 'package:flutter_application/views/esqueci_senha_view.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -33,15 +34,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 24.0),
-            // --- LIMITADOR DE LARGURA PARA TELAS GRANDES ---
             child: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 400), // Largura fixa ideal para formulários
+                constraints: const BoxConstraints(maxWidth: 400),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // --- LOGO E TÍTULO ---
                     Icon(
                       Icons.event_available_rounded,
                       size: 80,
@@ -66,7 +65,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     const SizedBox(height: 32),
 
-                    // --- ALERTA DE ERRO ---
                     if (authState.error != null) ...[
                       Container(
                         padding: const EdgeInsets.all(12),
@@ -91,7 +89,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       const SizedBox(height: 16),
                     ],
 
-                    // --- CAMPO E-MAIL ---
                     TextField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
@@ -105,7 +102,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // --- CAMPO SENHA ---
                     TextField(
                       controller: _passwordController,
                       obscureText: _obscurePassword,
@@ -131,7 +127,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // --- BOTÃO DE ENTRAR ---
                     SizedBox(
                       height: 52,
                       child: ElevatedButton(
@@ -158,20 +153,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                                 if (success && context.mounted) {
                                   final perfil = ref.read(authProvider).perfil;
-                                
-                                  if (perfil == 'vendedor') {
+
+                                  if (perfil == 'organizador') {
                                     Navigator.of(context).pushReplacement(
-                                      MaterialPageRoute(builder: (_) => const PainelVendedorView()),
+                                      MaterialPageRoute(builder: (_) => const PainelOrganizadorView()),
                                     );
                                   } else if (perfil == 'administrador') {
                                     Navigator.of(context).pushReplacement(
                                       MaterialPageRoute(builder: (_) => const PainelAdministradorView()),
                                     );
-                                  } else {
-                                    // organizador cai na tela de eventos
+                                  } else if (perfil == 'vendedor') {
                                     Navigator.of(context).pushReplacement(
-                                      MaterialPageRoute(builder: (_) => const PainelOrganizadorView()),
+                                      MaterialPageRoute(builder: (_) => const PainelVendedorView()),
                                     );
+                                  } else {
+                                    // Qualquer outro perfil (cliente, por exemplo) não
+                                    // pertence a esta tela — desloga na hora e avisa.
+                                    await ref.read(authProvider.notifier).logout();
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Esta conta é de cliente. Acesse pelo link do evento que você recebeu.',
+                                          ),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                    }
                                   }
                                 }
                               },
@@ -186,6 +194,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               )
                             : const Text('Entrar'),
                       ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const EsqueciSenhaView()),
+                        );
+                      },
+                      child: const Text('Esqueci minha senha'),
                     ),
                   ],
                 ),

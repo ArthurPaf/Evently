@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import '../models/evento_model.dart';
 import '../providers/auth_provider.dart';
-import 'painel_cliente_view.dart';
-import 'package:flutter_application/views/esqueci_senha_view.dart'; 
+import 'painel_cliente_view.dart'; // reaproveita a MinhaCarteiraView
+import 'esqueci_senha_view.dart';
 
 const String _baseUrl = 'http://127.0.0.1:8000';
 
@@ -72,11 +72,6 @@ class _ClienteEntryViewState extends ConsumerState<ClienteEntryView> {
   }
 
   Future<void> _entrarNaCarteira() async {
-    // Depois de logado, cria/recupera a carteira e vai direto pra ela.
-    final headers = {'Content-Type': 'application/json'};
-    // (o token já foi salvo pelo AuthNotifier.login; MinhaCarteiraView usa o
-    // provider que lê o token do SecureStorage sozinho)
-
     if (!mounted) return;
 
     final evento = Evento(
@@ -102,7 +97,6 @@ class _ClienteEntryViewState extends ConsumerState<ClienteEntryView> {
 
     try {
       if (_modoCadastro) {
-        // 1. Cria a conta (perfil CLIENTE é forçado pelo backend)
         final response = await http.post(
           Uri.parse('$_baseUrl/auth/registrar'),
           headers: {'Content-Type': 'application/json'},
@@ -123,7 +117,6 @@ class _ClienteEntryViewState extends ConsumerState<ClienteEntryView> {
         }
       }
 
-      // 2. Faz login (tanto no fluxo de cadastro quanto no de login)
       final sucesso = await ref.read(authProvider.notifier).login(
             _emailController.text.trim(),
             _senhaController.text,
@@ -271,14 +264,18 @@ class _ClienteEntryViewState extends ConsumerState<ClienteEntryView> {
                             : 'Ainda não tenho conta — Cadastrar',
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    if (!_modoCadastro)
                       TextButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const EsqueciSenhaView()),
-                          );
-                        },
+                        onPressed: _carregando
+                            ? null
+                            : () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => EsqueciSenhaView(eventoId: widget.eventoId),
+                                  ),
+                                );
+                              },
                         child: const Text('Esqueci minha senha'),
                       ),
                   ],
