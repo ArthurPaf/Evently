@@ -67,6 +67,17 @@ def gerar_relatorio_excel(nome_evento: str, dados: dict) -> bytes:
         ws_barracas.cell(row=linha, column=2).number_format = 'R$ #,##0.00'
     _autoajustar_colunas(ws_barracas)
 
+    ws_vendedores = wb.create_sheet("Vendas por Vendedor")
+    ws_vendedores.append(["Posição", "Vendedor", "Número de Vendas", "Valor Total"])
+    _estilizar_cabecalho(ws_vendedores, 1, 4)
+    for i, v in enumerate(dados.get("vendas_por_vendedor", []), start=1):
+        ws_vendedores.append([i, v["vendedor"], v["numero_vendas"], v["valor_total"]])
+        ws_vendedores.cell(row=i + 1, column=2).data_type = "s"
+        ws_vendedores.cell(row=i + 1, column=4).number_format = 'R$ #,##0.00'
+    ws_vendedores.freeze_panes = "A2"
+    ws_vendedores.auto_filter.ref = ws_vendedores.dimensions
+    _autoajustar_colunas(ws_vendedores)
+
     # --- Aba: Vendas por Período (dia + hora) ---
     ws_periodo = wb.create_sheet("Vendas por Período")
     ws_periodo.append(["Período", "Valor Total"])

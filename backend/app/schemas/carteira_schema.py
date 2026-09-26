@@ -1,5 +1,5 @@
 from typing import List, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from datetime import datetime
 
 
@@ -20,6 +20,15 @@ class RecargaCreate(BaseModel):
 
 class RecargaPropriaCreate(BaseModel):
     valor: float
+
+
+class ReembolsoCreate(BaseModel):
+    codigo_identificador: str
+    valor: Optional[float] = None  # None = reembolsa todo o saldo restante
+
+
+class ReembolsoProprioCreate(BaseModel):
+    valor: Optional[float] = Field(default=None, gt=0, allow_inf_nan=False)
 
 
 class ItemVendaInput(BaseModel):
@@ -48,6 +57,9 @@ class TransacaoResponse(BaseModel):
     valor_total: float
     data_hora: datetime
     barraca_id: Optional[int] = None
+    estornada: bool = False
+    estorno_de_id: Optional[int] = None
+    nome_cliente: Optional[str] = None
     itens: List[ItemVendaResponse] = []
 
     class Config:

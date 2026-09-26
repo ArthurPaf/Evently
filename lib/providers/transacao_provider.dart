@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
+import '../models/transacao_model.dart';
 
 const String _baseUrl = 'http://127.0.0.1:8000';
 
@@ -55,7 +56,7 @@ class TransacaoService {
   Future<Map<String, dynamic>> realizarVenda({
     required int barracaId,
     required String codigoIdentificador,
-    required List<Map<String, int>> itens, // [{'produto_id': x, 'quantidade': y}]
+    required List<Map<String, int>> itens,
   }) async {
     final url = Uri.parse('$_baseUrl/barracas/$barracaId/vendas');
     final headers = await _headers();
@@ -114,6 +115,66 @@ class TransacaoService {
     }
     return null;
   }
+
+  // Reembolso de saldo (total ou parcial) para um cliente
+  Future<Map<String, dynamic>> realizarReembolso({
+    required int eventoId,
+    required String codigoIdentificador,
+    double? valor, // null = reembolsa todo o saldo restante
+  }) async {
+    final url = Uri.parse('$_baseUrl/eventos/$eventoId/reembolsos');
+    final headers = await _headers();
+
+    try {
+      final response = await _client.post(
+        url,
+        headers: headers,
+        body: jsonEncode({
+          'codigo_identificador': codigoIdentificador,
+          if (valor != null) 'valor': valor,
+        }),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {'sucesso': true, 'mensagem': 'Reembolso realizado com sucesso!'};
+      }
+      final body = jsonDecode(response.body);
+      return {'sucesso': false, 'mensagem': body['detail'] ?? 'Erro ao reembolsar.'};
+    } catch (e) {
+      return {'sucesso': false, 'mensagem': 'Falha de conexão com o servidor.'};
+    }
+  }
+
+  // Estorna uma venda específica
+  Future<Map<String, dynamic>> estornarVenda(int transacaoId) async {
+    final url = Uri.parse('$_baseUrl/transacoes/$transacaoId/estornar');
+    final headers = await _headers();
+
+    try {
+      final response = await _client.post(url, headers: headers);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {'sucesso': true, 'mensagem': 'Venda estornada com sucesso!'};
+      }
+      final body = jsonDecode(response.body);
+      return {'sucesso': false, 'mensagem': body['detail'] ?? 'Erro ao estornar.'};
+    } catch (e) {
+      return {'sucesso': false, 'mensagem': 'Falha de conexão com o servidor.'};
+    }
+  }
+
+  // Últimas vendas de uma barraca, usado para localizar uma venda a estornar
+  Future<List<Transacao>> listarVendasDaBarraca(int barracaId) async {
+    final url = Uri.parse('$_baseUrl/barracas/$barracaId/vendas');
+    final headers = await _headers();
+    final response = await _client.get(url, headers: headers);
+
+    if (response.statusCode == 200) {
+      final List list = jsonDecode(response.body);
+      return list.map((json) => Transacao.fromJson(json)).toList();
+    }
+    throw Exception('Falha ao carregar vendas (${response.statusCode})');
+  }
 }
 
 final transacaoServiceProvider = Provider<TransacaoService>((ref) {
@@ -124,4 +185,10 @@ final dashboardProvider =
     FutureProvider.autoDispose.family<Map<String, dynamic>, int>((ref, eventoId) async {
   final service = ref.watch(transacaoServiceProvider);
   return await service.buscarDashboard(eventoId);
+});
+
+final vendasDaBarracaProvider =
+    FutureProvider.autoDispose.family<List<Transacao>, int>((ref, barracaId) async {
+  final service = ref.watch(transacaoServiceProvider);
+  return await service.listarVendasDaBarraca(barracaId);
 });

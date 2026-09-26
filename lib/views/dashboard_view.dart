@@ -1,16 +1,28 @@
+import '../widgets/evently_scaffold.dart';
+
 import 'dart:html' as html;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
+
 import '../providers/transacao_provider.dart';
 
 class DashboardView extends ConsumerWidget {
   final int eventoId;
   final String nomeEvento;
 
-  const DashboardView({super.key, required this.eventoId, required this.nomeEvento});
+  const DashboardView({
+    super.key,
+    required this.eventoId,
+    required this.nomeEvento,
+  });
 
-  Future<void> _exportar(BuildContext context, WidgetRef ref, String formato) async {
+  Future<void> _exportar(
+    BuildContext context,
+    WidgetRef ref,
+    String formato,
+  ) async {
     final service = ref.read(transacaoServiceProvider);
     final bytes = formato == 'pdf'
         ? await service.exportarDashboardPdf(eventoId)
@@ -19,7 +31,10 @@ class DashboardView extends ConsumerWidget {
     if (bytes == null) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Erro ao gerar o relatório.'), backgroundColor: Colors.red),
+          const SnackBar(
+            content: Text('Erro ao gerar o relatório.'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
       return;
@@ -30,7 +45,6 @@ class DashboardView extends ConsumerWidget {
         : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
     final extensao = formato == 'pdf' ? 'pdf' : 'xlsx';
 
-    // Dispara o download no navegador (Flutter Web)
     final blob = html.Blob([bytes], mimeType);
     final url = html.Url.createObjectUrlFromBlob(blob);
     html.AnchorElement(href: url)
@@ -40,7 +54,10 @@ class DashboardView extends ConsumerWidget {
 
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Relatório exportado!'), backgroundColor: Colors.green),
+        const SnackBar(
+          content: Text('Relatório exportado!'),
+          backgroundColor: Colors.green,
+        ),
       );
     }
   }
@@ -49,11 +66,9 @@ class DashboardView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final dashboardAsync = ref.watch(dashboardProvider(eventoId));
 
-    return Scaffold(
+    return EventlyScaffold(
       appBar: AppBar(
         title: Text('Dashboard - $nomeEvento'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
         actions: [
           PopupMenuButton<String>(
             icon: const Icon(Icons.download_outlined),
@@ -86,53 +101,106 @@ class DashboardView extends ConsumerWidget {
       ),
       body: dashboardAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text('Erro ao carregar dashboard: $err')),
+        error: (err, _) =>
+            Center(child: Text('Erro ao carregar dashboard: $err')),
         data: (dados) {
           final totalVendido = (dados['total_vendido'] as num).toDouble();
           final numeroTransacoes = dados['numero_transacoes'] as int;
+          final totalReembolsado =
+              (dados['total_reembolsado'] as num?)?.toDouble() ?? 0.0;
+          final numeroEstornos = dados['numero_estornos'] as int? ?? 0;
           final produtosMaisVendidos = dados['produtos_mais_vendidos'] as List;
-          // Já vem ordenado do backend, da barraca que mais vendeu para a que menos vendeu.
           final vendasPorBarraca = dados['vendas_por_barraca'] as List;
           final vendasPorPeriodo = dados['vendas_por_periodo'] as List;
+          final vendasPorVendedor = dados['vendas_por_vendedor'] as List? ?? [];
 
-          final periodos = vendasPorPeriodo.map((v) => v['periodo'] as String).toList();
-          final valores = vendasPorPeriodo.map((v) => (v['valor_total'] as num).toDouble()).toList();
-          final maiorValor = valores.isEmpty ? 1.0 : valores.reduce((a, b) => a > b ? a : b);
+          final periodos = vendasPorPeriodo
+              .map((v) => v['periodo'] as String)
+              .toList();
+          final valores = vendasPorPeriodo
+              .map((v) => (v['valor_total'] as num).toDouble())
+              .toList();
+          final maiorValor = valores.isEmpty
+              ? 1.0
+              : valores.reduce((a, b) => a > b ? a : b);
 
           return RefreshIndicator(
             onRefresh: () async => ref.invalidate(dashboardProvider(eventoId)),
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: _CardMetrica(
-                        titulo: 'Total Vendido',
+                Text(
+                  'Visão geral do evento',
+                  style: Theme.of(context).textTheme.headlineMedium,
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Acompanhe os resultados e descubra o que movimenta seu evento.',
+                ),
+                const SizedBox(height: 24),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final columns = constraints.maxWidth >= 900
+                        ? 4
+                        : constraints.maxWidth >= 440
+                        ? 2
+                        : 1;
+                    final metrics = [
+                      _CardMetrica(
+                        titulo: 'Total vendido',
                         valor: 'R\$ ${totalVendido.toStringAsFixed(2)}',
                         cor: Colors.green,
                         icone: Icons.attach_money,
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _CardMetrica(
+                      _CardMetrica(
                         titulo: 'Transações',
                         valor: '$numeroTransacoes',
-                        cor: Colors.blue,
+                        cor: Colors.deepPurple,
                         icone: Icons.receipt_long,
                       ),
-                    ),
-                  ],
+                      _CardMetrica(
+                        titulo: 'Reembolsado',
+                        valor: 'R\$ ${totalReembolsado.toStringAsFixed(2)}',
+                        cor: Colors.orange,
+                        icone: Icons.replay_circle_filled_outlined,
+                      ),
+                      _CardMetrica(
+                        titulo: 'Estornos',
+                        valor: '$numeroEstornos',
+                        cor: Colors.redAccent,
+                        icone: Icons.undo,
+                      ),
+                    ];
+                    return Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: metrics
+                          .map(
+                            (metric) => SizedBox(
+                              width:
+                                  (constraints.maxWidth - (columns - 1) * 12) /
+                                  columns,
+                              child: metric,
+                            ),
+                          )
+                          .toList(),
+                    );
+                  },
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 32),
 
-                Text('Vendas por Período',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                Text(
+                  'Vendas por Período',
+                  style: Theme.of(context).textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(height: 4),
                 Text(
-                  'Agrupado por dia e hora — cobre eventos de vários dias.',
-                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                  'Agrupado por dia e hora — cobre eventos de vários dias. Vendas estornadas não entram aqui.',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: 12,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 if (vendasPorPeriodo.isEmpty)
@@ -150,7 +218,9 @@ class DashboardView extends ConsumerWidget {
                         gridData: FlGridData(
                           show: true,
                           drawVerticalLine: false,
-                          horizontalInterval: maiorValor / 4 == 0 ? 1 : maiorValor / 4,
+                          horizontalInterval: maiorValor / 4 == 0
+                              ? 1
+                              : maiorValor / 4,
                           getDrawingHorizontalLine: (value) => FlLine(
                             color: Colors.grey.withOpacity(0.2),
                             strokeWidth: 1,
@@ -158,8 +228,12 @@ class DashboardView extends ConsumerWidget {
                         ),
                         borderData: FlBorderData(show: false),
                         titlesData: FlTitlesData(
-                          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          topTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                          rightTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
                           leftTitles: AxisTitles(
                             sideTitles: SideTitles(
                               showTitles: true,
@@ -176,7 +250,8 @@ class DashboardView extends ConsumerWidget {
                               reservedSize: 48,
                               getTitlesWidget: (value, meta) {
                                 final i = value.toInt();
-                                if (i < 0 || i >= periodos.length) return const SizedBox.shrink();
+                                if (i < 0 || i >= periodos.length)
+                                  return const SizedBox.shrink();
                                 return Padding(
                                   padding: const EdgeInsets.only(top: 8),
                                   child: Transform.rotate(
@@ -193,10 +268,15 @@ class DashboardView extends ConsumerWidget {
                         ),
                         barTouchData: BarTouchData(
                           touchTooltipData: BarTouchTooltipData(
-                            getTooltipItem: (group, groupIndex, rod, rodIndex) => BarTooltipItem(
-                              'R\$ ${rod.toY.toStringAsFixed(2)}',
-                              const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                            ),
+                            getTooltipItem:
+                                (group, groupIndex, rod, rodIndex) =>
+                                    BarTooltipItem(
+                                      'R\$ ${rod.toY.toStringAsFixed(2)}',
+                                      const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                           ),
                         ),
                         barGroups: List.generate(periodos.length, (i) {
@@ -206,13 +286,16 @@ class DashboardView extends ConsumerWidget {
                               BarChartRodData(
                                 toY: valores[i],
                                 width: 28,
-                                borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+                                borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(6),
+                                ),
                                 gradient: LinearGradient(
                                   begin: Alignment.bottomCenter,
                                   end: Alignment.topCenter,
                                   colors: [
                                     Theme.of(context).colorScheme.primary,
-                                    Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                                    Theme.of(context).colorScheme.primary
+                                        .withOpacity(0.5),
                                   ],
                                 ),
                               ),
@@ -224,8 +307,11 @@ class DashboardView extends ConsumerWidget {
                   ),
                 const SizedBox(height: 28),
 
-                Text('Produtos Mais Vendidos',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                Text(
+                  'Produtos Mais Vendidos',
+                  style: Theme.of(context).textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(height: 8),
                 if (produtosMaisVendidos.isEmpty)
                   const Text('Sem vendas registradas ainda.')
@@ -234,24 +320,73 @@ class DashboardView extends ConsumerWidget {
                     return Card(
                       margin: const EdgeInsets.symmetric(vertical: 4),
                       child: ListTile(
-                        leading: const Icon(Icons.sell_outlined, color: Colors.deepPurple),
+                        leading: const Icon(
+                          Icons.sell_outlined,
+                          color: Colors.deepPurple,
+                        ),
                         title: Text(p['nome']),
                         subtitle: Text('${p['quantidade']} unidades vendidas'),
                         trailing: Text(
                           'R\$ ${(p['valor_total'] as num).toStringAsFixed(2)}',
-                          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green,
+                          ),
                         ),
                       ),
                     );
                   }),
                 const SizedBox(height: 24),
 
-                Text('Vendas por Barraca',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                Text(
+                  'Vendedores que Mais Venderam',
+                  style: Theme.of(context).textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Ordenado pelo valor vendido. Vendas estornadas não são contabilizadas.',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                if (vendasPorVendedor.isEmpty)
+                  const Text('Nenhuma venda de vendedor registrada ainda.')
+                else
+                  ...List.generate(vendasPorVendedor.length, (i) {
+                    final vendedor = vendasPorVendedor[i];
+                    return Card(
+                      margin: const EdgeInsets.symmetric(vertical: 4),
+                      child: ListTile(
+                        leading: CircleAvatar(child: Text('${i + 1}')),
+                        title: Text(vendedor['vendedor']),
+                        subtitle: Text('${vendedor['numero_vendas']} vendas'),
+                        trailing: Text(
+                          'R\$ ${(vendedor['valor_total'] as num).toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green,
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                const SizedBox(height: 24),
+
+                Text(
+                  'Vendas por Barraca',
+                  style: Theme.of(context).textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(height: 4),
                 Text(
                   'Ordenado da barraca que mais vendeu para a que menos vendeu.',
-                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: 12,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 if (vendasPorBarraca.isEmpty)
@@ -265,15 +400,25 @@ class DashboardView extends ConsumerWidget {
                         leading: CircleAvatar(
                           backgroundColor: i == 0
                               ? Colors.amber.withOpacity(0.2)
-                              : Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                              : Theme.of(context).colorScheme.primary
+                                    .withOpacity(0.1),
                           child: i == 0
-                              ? const Icon(Icons.emoji_events, color: Colors.amber)
-                              : Icon(Icons.store, color: Theme.of(context).colorScheme.primary),
+                              ? const Icon(
+                                  Icons.emoji_events,
+                                  color: Colors.amber,
+                                )
+                              : Icon(
+                                  Icons.store,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
                         ),
                         title: Text(b['barraca']),
                         trailing: Text(
                           'R\$ ${(b['valor_total'] as num).toStringAsFixed(2)}',
-                          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green,
+                          ),
                         ),
                       ),
                     );
@@ -311,9 +456,22 @@ class _CardMetrica extends StatelessWidget {
           children: [
             Icon(icone, color: cor),
             const SizedBox(height: 8),
-            Text(titulo, style: TextStyle(color: Colors.grey[700], fontSize: 12)),
+            Text(
+              titulo,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 12,
+              ),
+            ),
             const SizedBox(height: 4),
-            Text(valor, style: TextStyle(color: cor, fontSize: 20, fontWeight: FontWeight.bold)),
+            Text(
+              valor,
+              style: TextStyle(
+                color: cor,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ],
         ),
       ),

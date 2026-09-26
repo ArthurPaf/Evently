@@ -1,7 +1,11 @@
+import '../widgets/evently_scaffold.dart';
+
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+
 import '../models/evento_model.dart';
 import '../models/carteira_model.dart';
 import '../models/transacao_model.dart';
@@ -9,6 +13,7 @@ import '../providers/auth_provider.dart';
 import '../providers/cliente_provider.dart';
 import '../views/cliente_entry_view.dart';
 import 'configuracoes_view.dart';
+import 'reembolso_view.dart';
 
 // --- CARTEIRA DIGITAL (QR Code + saldo + extrato) ---
 class MinhaCarteiraView extends ConsumerStatefulWidget {
@@ -35,7 +40,10 @@ class _MinhaCarteiraViewState extends ConsumerState<MinhaCarteiraView> {
     // cada novo login vê exclusivamente os dados dessa sessão, sem chance de
     // exibir por engano dados de um cliente anterior.
     _carregarTudo();
-    _timer = Timer.periodic(const Duration(seconds: 3), (_) => _carregarTudo(mostrarLoading: false));
+    _timer = Timer.periodic(
+      const Duration(seconds: 3),
+      (_) => _carregarTudo(mostrarLoading: false),
+    );
   }
 
   @override
@@ -74,7 +82,9 @@ class _MinhaCarteiraViewState extends ConsumerState<MinhaCarteiraView> {
     await ref.read(authProvider.notifier).logout();
     if (context.mounted) {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => ClienteEntryView(eventoId: widget.evento.id)),
+        MaterialPageRoute(
+          builder: (_) => ClienteEntryView(eventoId: widget.evento.id),
+        ),
       );
     }
   }
@@ -93,7 +103,9 @@ class _MinhaCarteiraViewState extends ConsumerState<MinhaCarteiraView> {
         return StatefulBuilder(
           builder: (context, setModalState) {
             Future<void> confirmar() async {
-              final valorText = valorController.text.replaceAll(',', '.').trim();
+              final valorText = valorController.text
+                  .replaceAll(',', '.')
+                  .trim();
               final valor = double.tryParse(valorText) ?? 0.0;
 
               if (valor <= 0) {
@@ -105,7 +117,9 @@ class _MinhaCarteiraViewState extends ConsumerState<MinhaCarteiraView> {
 
               setModalState(() => carregando = true);
 
-              final resultado = await ref.read(clienteServiceProvider).recarregarPropriaCarteira(
+              final resultado = await ref
+                  .read(clienteServiceProvider)
+                  .recarregarPropriaCarteira(
                     eventoId: widget.evento.id,
                     valor: valor,
                   );
@@ -116,7 +130,9 @@ class _MinhaCarteiraViewState extends ConsumerState<MinhaCarteiraView> {
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(resultado['mensagem'] ?? 'Erro desconhecido.'),
+                    content: Text(
+                      resultado['mensagem'] ?? 'Erro desconhecido.',
+                    ),
                     backgroundColor: sucesso ? Colors.green : Colors.red,
                   ),
                 );
@@ -131,23 +147,33 @@ class _MinhaCarteiraViewState extends ConsumerState<MinhaCarteiraView> {
             return Padding(
               padding: EdgeInsets.only(
                 bottom: MediaQuery.of(modalContext).viewInsets.bottom + 16,
-                top: 16, left: 16, right: 16,
+                top: 16,
+                left: 16,
+                right: 16,
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('Adicionar Créditos',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                  Text(
+                    'Adicionar Créditos',
+                    style: Theme.of(context).textTheme.titleLarge
+                        ?.copyWith(fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 4),
                   Text(
                     'Pagamento simulado — nenhum valor real será cobrado.',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontSize: 12,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   TextField(
                     controller: valorController,
                     autofocus: true,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     decoration: const InputDecoration(
                       labelText: 'Valor (R\$)',
                       prefixIcon: Icon(Icons.attach_money),
@@ -162,8 +188,12 @@ class _MinhaCarteiraViewState extends ConsumerState<MinhaCarteiraView> {
                       onPressed: carregando ? null : confirmar,
                       child: carregando
                           ? const SizedBox(
-                              width: 20, height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
                             )
                           : const Text('Confirmar Pagamento'),
                     ),
@@ -179,10 +209,9 @@ class _MinhaCarteiraViewState extends ConsumerState<MinhaCarteiraView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return EventlyScaffold(
+      maxWidth: 760,
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
         title: Text(widget.evento.nome),
         automaticallyImplyLeading: false,
         actions: [
@@ -219,28 +248,90 @@ class _MinhaCarteiraViewState extends ConsumerState<MinhaCarteiraView> {
             child: ListView(
               padding: const EdgeInsets.all(20),
               children: [
+                Text(
+                  'Sua carteira',
+                  style: Theme.of(context).textTheme.headlineMedium,
+                ),
+                const SizedBox(height: 6),
+                const Text('Tudo pronto para aproveitar o evento.'),
+                const SizedBox(height: 20),
                 Card(
                   elevation: 2,
                   child: Padding(
                     padding: const EdgeInsets.all(20),
                     child: Column(
                       children: [
-                        Text(
-                          'Saldo disponível',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'R\$ ${carteira.saldoDigital.toStringAsFixed(2)}',
-                          style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.green),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(20),
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF52229A), Color(0xFF8950DA)],
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Row(
+                                children: [
+                                  Icon(
+                                    Icons.account_balance_wallet_outlined,
+                                    color: Colors.white70,
+                                  ),
+                                  SizedBox(width: 10),
+                                  Text(
+                                    'Saldo disponível',
+                                    style: TextStyle(color: Colors.white70),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  'R\$ ${carteira.saldoDigital.toStringAsFixed(2)}',
+                                  style: const TextStyle(
+                                    fontSize: 38,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                         const SizedBox(height: 12),
                         SizedBox(
                           width: double.infinity,
-                          child: OutlinedButton.icon(
+                          child: ElevatedButton.icon(
                             onPressed: _abrirModalAdicionarCredito,
                             icon: const Icon(Icons.add_card),
                             label: const Text('Adicionar Créditos'),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: carteira.saldoDigital <= 0
+                                ? null
+                                : () async {
+                                    await Navigator.push<bool>(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => ReembolsoView(
+                                          eventoId: widget.evento.id,
+                                          nomeEvento: widget.evento.nome,
+                                          proprioCliente: true,
+                                        ),
+                                      ),
+                                    );
+                                    if (!mounted) return;
+                                    await _carregarTudo(mostrarLoading: false);
+                                  },
+                            icon: const Icon(Icons.payments_outlined),
+                            label: const Text('Reembolsar meu saldo'),
                           ),
                         ),
                         const SizedBox(height: 24),
@@ -253,7 +344,9 @@ class _MinhaCarteiraViewState extends ConsumerState<MinhaCarteiraView> {
                           child: QrImageView(
                             data: carteira.codigoIdentificador,
                             version: QrVersions.auto,
-                            size: 200,
+                            size: MediaQuery.sizeOf(context).width < 360
+                                ? 160
+                                : 200,
                             backgroundColor: Colors.white,
                             eyeStyle: const QrEyeStyle(
                               eyeShape: QrEyeShape.square,
@@ -268,13 +361,21 @@ class _MinhaCarteiraViewState extends ConsumerState<MinhaCarteiraView> {
                         const SizedBox(height: 12),
                         Text(
                           'Código: ${carteira.codigoIdentificador}',
-                          style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 2),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 2,
+                          ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'Mostre este QR Code ou informe o código na barraca',
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                          style: TextStyle(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant,
+                            fontSize: 12,
+                          ),
                         ),
                       ],
                     ),
@@ -283,22 +384,41 @@ class _MinhaCarteiraViewState extends ConsumerState<MinhaCarteiraView> {
                 const SizedBox(height: 24),
                 Text(
                   'Extrato',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                  style: Theme.of(context).textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 if (_extrato.isEmpty)
                   const Text('Nenhuma movimentação ainda.')
                 else
                   ..._extrato.map((t) {
-                    final isRecarga = t.tipo == 'recarga';
+                    final (titulo, icone, cor, sinal) = switch (t.tipo) {
+                      'recarga' => (
+                        'Recarga',
+                        Icons.add_circle_outline,
+                        Colors.green,
+                        '+',
+                      ),
+                      'venda' => (
+                        t.estornada ? 'Compra estornada' : 'Compra',
+                        Icons.remove_circle_outline,
+                        Colors.red,
+                        '-',
+                      ),
+                      'estorno' => ('Estorno', Icons.undo, Colors.green, '+'),
+                      'reembolso' => (
+                        'Reembolso',
+                        Icons.payments_outlined,
+                        Colors.red,
+                        '-',
+                      ),
+                      _ => ('Movimentação', Icons.swap_horiz, Colors.grey, ''),
+                    };
                     return Card(
                       margin: const EdgeInsets.symmetric(vertical: 4),
                       child: ListTile(
-                        leading: Icon(
-                          isRecarga ? Icons.add_circle_outline : Icons.remove_circle_outline,
-                          color: isRecarga ? Colors.green : Colors.red,
-                        ),
-                        title: Text(isRecarga ? 'Recarga' : 'Compra'),
+                        leading: Icon(icone, color: cor),
+                        title: Text(titulo),
                         subtitle: Text(
                           '${t.dataHora.day.toString().padLeft(2, '0')}/'
                           '${t.dataHora.month.toString().padLeft(2, '0')} às '
@@ -307,10 +427,10 @@ class _MinhaCarteiraViewState extends ConsumerState<MinhaCarteiraView> {
                         ),
                         isThreeLine: t.itens.isNotEmpty,
                         trailing: Text(
-                          '${isRecarga ? '+' : '-'} R\$ ${t.valorTotal.toStringAsFixed(2)}',
+                          '$sinal R\$ ${t.valorTotal.toStringAsFixed(2)}',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: isRecarga ? Colors.green : Colors.red,
+                            color: cor,
                           ),
                         ),
                       ),

@@ -1,12 +1,16 @@
+import '../widgets/evently_scaffold.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../models/evento_model.dart';
 import '../providers/auth_provider.dart';
 import '../providers/administrador_provider.dart';
 import 'detalhes_evento_view.dart';
 import 'recarga_view.dart';
-import '../screens/login_screen.dart';
+import 'reembolso_view.dart';
 import 'configuracoes_view.dart';
+import '../screens/login_screen.dart';
 
 class PainelAdministradorView extends ConsumerWidget {
   const PainelAdministradorView({super.key});
@@ -24,7 +28,6 @@ class PainelAdministradorView extends ConsumerWidget {
     }
   }
 
-  // --- MENU AO SEGURAR O CARD DO EVENTO ---
   void _exibirOpcoesEvento(BuildContext context, WidgetRef ref, Evento evento) {
     showModalBottomSheet(
       context: context,
@@ -37,15 +40,6 @@ class PainelAdministradorView extends ConsumerWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
               ListTile(
                 leading: const Icon(Icons.qr_code_scanner, color: Colors.teal),
                 title: const Text('Recarregar Saldo de Cliente'),
@@ -55,6 +49,25 @@ class PainelAdministradorView extends ConsumerWidget {
                     context,
                     MaterialPageRoute(
                       builder: (_) => RecargaView(
+                        eventoId: evento.id,
+                        nomeEvento: evento.nome,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(
+                  Icons.assignment_return_outlined,
+                  color: Colors.orange,
+                ),
+                title: const Text('Reembolsar Cliente'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ReembolsoView(
                         eventoId: evento.id,
                         nomeEvento: evento.nome,
                       ),
@@ -78,8 +91,11 @@ class PainelAdministradorView extends ConsumerWidget {
     );
   }
 
-  // --- MODAL: EDITAR EVENTO (sem opção de excluir - só o organizador exclui) ---
-  void _abrirModalEditarEvento(BuildContext context, WidgetRef ref, Evento evento) {
+  void _abrirModalEditarEvento(
+    BuildContext context,
+    WidgetRef ref,
+    Evento evento,
+  ) {
     final nomeController = TextEditingController(text: evento.nome);
     final localController = TextEditingController(text: evento.local);
 
@@ -101,9 +117,8 @@ class PainelAdministradorView extends ConsumerWidget {
           children: [
             Text(
               'Editar Evento',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(context).textTheme.titleLarge
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             TextField(
@@ -137,7 +152,9 @@ class PainelAdministradorView extends ConsumerWidget {
                     local: localController.text.trim(),
                     dataInicio: evento.dataInicio,
                     dataFim: evento.dataFim,
-                    administradorIds: evento.administradores.map((a) => a.id).toList(),
+                    administradorIds: evento.administradores
+                        .map((a) => a.id)
+                        .toList(),
                   );
 
                   final resultado = await ref
@@ -182,10 +199,8 @@ class PainelAdministradorView extends ConsumerWidget {
     final nomeUsuario = authState.nomeUsuario ?? 'Administrador';
     final emailUsuario = authState.emailUsuario ?? '';
 
-    return Scaffold(
+    return EventlyScaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
         title: const Text('Eventos que Administro'),
         leading: Builder(
           builder: (context) => IconButton(
@@ -200,11 +215,25 @@ class PainelAdministradorView extends ConsumerWidget {
           padding: EdgeInsets.zero,
           children: [
             UserAccountsDrawerHeader(
-              accountName: Text(nomeUsuario),
-              accountEmail: Text(emailUsuario),
+              accountName: Text(
+                nomeUsuario,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onPrimary,
+                ),
+              ),
+              accountEmail: Text(
+                emailUsuario,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onPrimary,
+                ),
+              ),
               currentAccountPicture: const CircleAvatar(
                 backgroundColor: Colors.white,
-                child: Icon(Icons.admin_panel_settings, size: 35, color: Colors.deepPurple),
+                child: Icon(
+                  Icons.admin_panel_settings,
+                  size: 35,
+                  color: Colors.deepPurple,
+                ),
               ),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.primary,
@@ -253,31 +282,34 @@ class PainelAdministradorView extends ConsumerWidget {
           children: [
             Text(
               'Olá, $nomeUsuario 👋',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(context).textTheme.headlineSmall
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4),
             Text(
-              'Toque em um evento para gerenciar barracas e produtos, ou segure para ver o dashboard, recarregar saldo ou editar.',
+              'Toque em um evento para gerenciar barracas e produtos, ou segure para recarregar, reembolsar ou editar.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[600],
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 16),
             Expanded(
               child: eventosAsync.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
-                error: (err, stack) => Center(child: Text('Erro ao carregar: $err')),
+                error: (err, stack) =>
+                    Center(child: Text('Erro ao carregar: $err')),
                 data: (eventos) {
                   if (eventos.isEmpty) {
                     return const Center(
-                      child: Text('Você ainda não foi vinculado a nenhum evento.'),
+                      child: Text(
+                        'Você ainda não foi vinculado a nenhum evento.',
+                      ),
                     );
                   }
 
                   return RefreshIndicator(
-                    onRefresh: () async => ref.invalidate(meusEventosAdministradorProvider),
+                    onRefresh: () async =>
+                        ref.invalidate(meusEventosAdministradorProvider),
                     child: ListView.builder(
                       itemCount: eventos.length,
                       itemBuilder: (context, index) {
@@ -298,17 +330,25 @@ class PainelAdministradorView extends ConsumerWidget {
                             ),
                             title: Text(
                               evento.nome,
-                              style: const TextStyle(fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             subtitle: Text(
                               '${_converterParaBR(evento.dataInicio)} até ${_converterParaBR(evento.dataFim)}',
                             ),
-                            trailing: const Icon(Icons.chevron_right),
+                            trailing: IconButton(
+                              tooltip: 'Opções do evento',
+                              icon: const Icon(Icons.more_horiz),
+                              onPressed: () =>
+                                  _exibirOpcoesEvento(context, ref, evento),
+                            ),
                             onTap: () {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => DetalhesEventoView(evento: evento),
+                                  builder: (_) =>
+                                      DetalhesEventoView(evento: evento),
                                 ),
                               );
                             },

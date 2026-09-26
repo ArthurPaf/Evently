@@ -1,6 +1,9 @@
+import '../widgets/evently_scaffold.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_application/views/criar_evento_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../models/evento_model.dart';
 import '../providers/auth_provider.dart';
 import '../providers/evento_provider.dart';
@@ -12,13 +15,15 @@ import '../models/administrador_model.dart';
 import 'cadastrar_administrador_view.dart';
 import 'dashboard_view.dart';
 import 'recarga_view.dart';
+import 'reembolso_view.dart';
 import 'configuracoes_view.dart';
 
 class PainelOrganizadorView extends ConsumerStatefulWidget {
   const PainelOrganizadorView({super.key});
 
   @override
-  ConsumerState<PainelOrganizadorView> createState() => _PainelOrganizadorViewState();
+  ConsumerState<PainelOrganizadorView> createState() =>
+      _PainelOrganizadorViewState();
 }
 
 class _PainelOrganizadorViewState extends ConsumerState<PainelOrganizadorView>
@@ -70,7 +75,11 @@ class _PainelOrganizadorViewState extends ConsumerState<PainelOrganizadorView>
     return DateTime.now();
   }
 
-  void _exibirOpcoesEventoAtivo(BuildContext context, WidgetRef ref, Evento evento) {
+  void _exibirOpcoesEventoAtivo(
+    BuildContext context,
+    WidgetRef ref,
+    Evento evento,
+  ) {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -82,17 +91,11 @@ class _PainelOrganizadorViewState extends ConsumerState<PainelOrganizadorView>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
               ListTile(
-                leading: const Icon(Icons.dashboard_outlined, color: Colors.deepPurple),
+                leading: const Icon(
+                  Icons.dashboard_outlined,
+                  color: Colors.deepPurple,
+                ),
                 title: const Text('Dashboard Financeiro'),
                 onTap: () {
                   Navigator.pop(ctx);
@@ -123,6 +126,25 @@ class _PainelOrganizadorViewState extends ConsumerState<PainelOrganizadorView>
                   );
                 },
               ),
+              ListTile(
+                leading: const Icon(
+                  Icons.assignment_return_outlined,
+                  color: Colors.orange,
+                ),
+                title: const Text('Reembolsar Cliente'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ReembolsoView(
+                        eventoId: evento.id,
+                        nomeEvento: evento.nome,
+                      ),
+                    ),
+                  );
+                },
+              ),
               const Divider(),
               ListTile(
                 leading: const Icon(Icons.edit_outlined, color: Colors.blue),
@@ -134,7 +156,10 @@ class _PainelOrganizadorViewState extends ConsumerState<PainelOrganizadorView>
               ),
               ListTile(
                 leading: const Icon(Icons.delete_outline, color: Colors.red),
-                title: const Text('Excluir Evento', style: TextStyle(color: Colors.red)),
+                title: const Text(
+                  'Excluir Evento',
+                  style: TextStyle(color: Colors.red),
+                ),
                 onTap: () {
                   Navigator.pop(ctx);
                   _confirmarExclusao(context, ref, evento);
@@ -159,17 +184,11 @@ class _PainelOrganizadorViewState extends ConsumerState<PainelOrganizadorView>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
               ListTile(
-                leading: const Icon(Icons.dashboard_outlined, color: Colors.deepPurple),
+                leading: const Icon(
+                  Icons.dashboard_outlined,
+                  color: Colors.deepPurple,
+                ),
                 title: const Text('Dashboard Financeiro'),
                 onTap: () {
                   Navigator.pop(ctx);
@@ -184,6 +203,28 @@ class _PainelOrganizadorViewState extends ConsumerState<PainelOrganizadorView>
                   );
                 },
               ),
+              ListTile(
+                leading: const Icon(
+                  Icons.assignment_return_outlined,
+                  color: Colors.orange,
+                ),
+                title: const Text('Reembolsar Cliente'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ReembolsoView(
+                        eventoId: evento.id,
+                        nomeEvento: evento.nome,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              // Sem recarga, editar ou excluir: evento já foi encerrado.
+              // Reembolso continua liberado — costuma ser feito justamente
+              // ao encerrar, para devolver o saldo não utilizado.
             ],
           ),
         );
@@ -196,7 +237,9 @@ class _PainelOrganizadorViewState extends ConsumerState<PainelOrganizadorView>
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Excluir Evento'),
-        content: Text('Tem certeza que deseja excluir o evento "${evento.nome}"?'),
+        content: Text(
+          'Tem certeza que deseja excluir o evento "${evento.nome}"?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -240,8 +283,9 @@ class _PainelOrganizadorViewState extends ConsumerState<PainelOrganizadorView>
     String dataInicioBR = _converterParaBR(evento.dataInicio);
     String dataFimBR = _converterParaBR(evento.dataFim);
 
-    final List<int> administradoresSelecionados =
-        evento.administradores.map((a) => a.id).toList();
+    final List<int> administradoresSelecionados = evento.administradores
+        .map((a) => a.id)
+        .toList();
 
     showDialog(
       context: context,
@@ -251,7 +295,9 @@ class _PainelOrganizadorViewState extends ConsumerState<PainelOrganizadorView>
             Future<void> selecionarData(bool isDataInicio) async {
               FocusManager.instance.primaryFocus?.unfocus();
 
-              final dataAtual = _parseDataBR(isDataInicio ? dataInicioBR : dataFimBR);
+              final dataAtual = _parseDataBR(
+                isDataInicio ? dataInicioBR : dataFimBR,
+              );
 
               final DateTime? dataSelecionada = await showDatePicker(
                 context: context,
@@ -316,7 +362,7 @@ class _PainelOrganizadorViewState extends ConsumerState<PainelOrganizadorView>
                           style: TextStyle(
                             fontSize: 15,
                             color: dataInicioBR.isEmpty
-                                ? Colors.grey[600]
+                                ? Theme.of(context).colorScheme.onSurfaceVariant
                                 : Colors.black87,
                           ),
                         ),
@@ -339,7 +385,7 @@ class _PainelOrganizadorViewState extends ConsumerState<PainelOrganizadorView>
                           style: TextStyle(
                             fontSize: 15,
                             color: dataFimBR.isEmpty
-                                ? Colors.grey[600]
+                                ? Theme.of(context).colorScheme.onSurfaceVariant
                                 : Colors.black87,
                           ),
                         ),
@@ -350,22 +396,24 @@ class _PainelOrganizadorViewState extends ConsumerState<PainelOrganizadorView>
                       alignment: Alignment.centerLeft,
                       child: Text(
                         'Administradores deste evento',
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                        style: Theme.of(context).textTheme.titleSmall
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                     ),
                     const SizedBox(height: 8),
                     Consumer(
                       builder: (context, ref, _) {
-                        final administradoresAsync = ref.watch(administradoresProvider);
+                        final administradoresAsync = ref.watch(
+                          administradoresProvider,
+                        );
 
                         return administradoresAsync.when(
                           loading: () => const Padding(
                             padding: EdgeInsets.all(16.0),
                             child: Center(child: CircularProgressIndicator()),
                           ),
-                          error: (err, _) => Text('Erro ao carregar administradores: $err'),
+                          error: (err, _) =>
+                              Text('Erro ao carregar administradores: $err'),
                           data: (administradores) {
                             if (administradores.isEmpty) {
                               return const Text(
@@ -382,8 +430,13 @@ class _PainelOrganizadorViewState extends ConsumerState<PainelOrganizadorView>
                               ),
                               child: ListView(
                                 shrinkWrap: true,
-                                children: administradores.map((Administrador a) {
-                                  final selecionado = administradoresSelecionados.contains(a.id);
+                                children: administradores.map((
+                                  Administrador a,
+                                ) {
+                                  final selecionado =
+                                      administradoresSelecionados.contains(
+                                        a.id,
+                                      );
                                   return CheckboxListTile(
                                     dense: true,
                                     title: Text(a.nome),
@@ -394,7 +447,9 @@ class _PainelOrganizadorViewState extends ConsumerState<PainelOrganizadorView>
                                         if (marcado == true) {
                                           administradoresSelecionados.add(a.id);
                                         } else {
-                                          administradoresSelecionados.remove(a.id);
+                                          administradoresSelecionados.remove(
+                                            a.id,
+                                          );
                                         }
                                       });
                                     },
@@ -445,7 +500,9 @@ class _PainelOrganizadorViewState extends ConsumerState<PainelOrganizadorView>
 
                     if (context.mounted) {
                       final bool sucesso = resultado['sucesso'] ?? false;
-                      final String mensagem = resultado['mensagem'] ?? 'Erro ao atualizar o evento.';
+                      final String mensagem =
+                          resultado['mensagem'] ??
+                          'Erro ao atualizar o evento.';
 
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
@@ -468,44 +525,169 @@ class _PainelOrganizadorViewState extends ConsumerState<PainelOrganizadorView>
   Widget _listaDeEventos(List<Evento> eventos, {required bool encerrados}) {
     if (eventos.isEmpty) {
       return Center(
-        child: Text(
-          encerrados ? 'Nenhum evento encerrado ainda.' : 'Nenhum evento ativo.',
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.event_note_rounded,
+                size: 64,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(height: 20),
+              Text(
+                encerrados
+                    ? 'Nenhum evento encerrado'
+                    : 'Seu próximo evento começa aqui',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                encerrados
+                    ? 'Os eventos finalizados aparecerão nesta área.'
+                    : 'Toque em Novo evento para começar a organizar.',
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
       );
     }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = constraints.maxWidth >= 1000
+            ? 3
+            : constraints.maxWidth >= 680
+            ? 2
+            : 1;
+        return SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 100),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                encerrados ? 'Histórico de eventos' : 'Vamos fazer acontecer.',
+                style: Theme.of(context).textTheme.headlineMedium,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '${eventos.length} eventos ${encerrados ? 'encerrados' : 'ativos'} · Tudo para gerenciar sua operação',
+              ),
+              const SizedBox(height: 24),
+              Wrap(
+                spacing: 16,
+                runSpacing: 16,
+                children: eventos.map((evento) {
+                  void opcoes() {
+                    if (encerrados) {
+                      _exibirOpcoesEventoEncerrado(context, evento);
+                    } else {
+                      _exibirOpcoesEventoAtivo(context, ref, evento);
+                    }
+                  }
 
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      itemCount: eventos.length,
-      itemBuilder: (context, index) {
-        final evento = eventos[index];
-        return Card(
-          elevation: 1,
-          margin: const EdgeInsets.symmetric(vertical: 6),
-          child: ListTile(
-            title: Text(
-              evento.nome,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            subtitle: Text(
-              '${_converterParaBR(evento.dataInicio)} até ${_converterParaBR(evento.dataFim)}',
-            ),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => DetalhesEventoView(evento: evento),
-                ),
-              );
-            },
-            onLongPress: () {
-              if (encerrados) {
-                _exibirOpcoesEventoEncerrado(context, evento);
-              } else {
-                _exibirOpcoesEventoAtivo(context, ref, evento);
-              }
-            },
+                  return SizedBox(
+                    width:
+                        (constraints.maxWidth - 40 - (columns - 1) * 16) /
+                        columns,
+                    child: Card(
+                      child: InkWell(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => DetalhesEventoView(evento: evento),
+                          ),
+                        ),
+                        onLongPress: opcoes,
+                        child: Padding(
+                          padding: const EdgeInsets.all(22),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primaryContainer,
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    child: Icon(
+                                      Icons.event_available_outlined,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onPrimaryContainer,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  Text(
+                                    encerrados ? 'Encerrado' : 'Ativo',
+                                    style: TextStyle(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    tooltip: 'Opções do evento',
+                                    onPressed: opcoes,
+                                    icon: const Icon(Icons.more_horiz),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 22),
+                              Text(
+                                evento.nome,
+                                style: Theme.of(context).textTheme.titleLarge,
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                '${_converterParaBR(evento.dataInicio)} até ${_converterParaBR(evento.dataFim)}',
+                              ),
+                              if (evento.local.isNotEmpty) ...[
+                                const SizedBox(height: 8),
+                                Text(
+                                  evento.local,
+                                  style: TextStyle(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                              const SizedBox(height: 24),
+                              Row(
+                                children: [
+                                  Text(
+                                    'Gerenciar evento',
+                                    style: TextStyle(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primary,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  const Icon(
+                                    Icons.arrow_forward_rounded,
+                                    size: 20,
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
           ),
         );
       },
@@ -520,10 +702,8 @@ class _PainelOrganizadorViewState extends ConsumerState<PainelOrganizadorView>
     final nomeUsuario = authState.nomeUsuario ?? 'Organizador';
     final emailUsuario = authState.emailUsuario ?? 'organizador@email.com';
 
-    return Scaffold(
+    return EventlyScaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
         title: const Text('Meus Eventos'),
         leading: Builder(
           builder: (context) {
@@ -538,11 +718,9 @@ class _PainelOrganizadorViewState extends ConsumerState<PainelOrganizadorView>
         ),
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: Colors.white,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white, 
+          indicatorSize: TabBarIndicatorSize.label,
           tabs: const [
-            Tab(text: 'Ativos',),
+            Tab(text: 'Ativos'),
             Tab(text: 'Encerrados'),
           ],
         ),
@@ -552,8 +730,18 @@ class _PainelOrganizadorViewState extends ConsumerState<PainelOrganizadorView>
           padding: EdgeInsets.zero,
           children: [
             UserAccountsDrawerHeader(
-              accountName: Text(nomeUsuario),
-              accountEmail: Text(emailUsuario),
+              accountName: Text(
+                nomeUsuario,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onPrimary,
+                ),
+              ),
+              accountEmail: Text(
+                emailUsuario,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onPrimary,
+                ),
+              ),
               currentAccountPicture: const CircleAvatar(
                 backgroundColor: Colors.white,
                 child: Icon(Icons.person, size: 35, color: Colors.deepPurple),
@@ -586,7 +774,9 @@ class _PainelOrganizadorViewState extends ConsumerState<PainelOrganizadorView>
                 Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const CadastrarVendedorView()),
+                  MaterialPageRoute(
+                    builder: (_) => const CadastrarVendedorView(),
+                  ),
                 );
               },
             ),
@@ -597,7 +787,9 @@ class _PainelOrganizadorViewState extends ConsumerState<PainelOrganizadorView>
                 Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const CadastrarAdministradorView()),
+                  MaterialPageRoute(
+                    builder: (_) => const CadastrarAdministradorView(),
+                  ),
                 );
               },
             ),
@@ -636,14 +828,15 @@ class _PainelOrganizadorViewState extends ConsumerState<PainelOrganizadorView>
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const CriarEventoView()),
           );
         },
-        child: const Icon(Icons.add),
+        icon: const Icon(Icons.add),
+        label: const Text('Novo evento'),
       ),
     );
   }

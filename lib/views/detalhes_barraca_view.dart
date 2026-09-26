@@ -1,5 +1,8 @@
+import '../widgets/evently_scaffold.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../models/barraca_model.dart';
 import '../models/produto_model.dart';
 import '../providers/produto_provider.dart';
@@ -35,20 +38,10 @@ class DetalhesBarracaView extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 16),
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
             Text(
               'Novo Produto',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(context).textTheme.titleLarge
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             TextField(
@@ -76,7 +69,9 @@ class DetalhesBarracaView extends ConsumerWidget {
               child: ElevatedButton(
                 onPressed: () async {
                   final nome = nomeController.text.trim();
-                  final precoText = precoController.text.replaceAll(',', '.').trim();
+                  final precoText = precoController.text
+                      .replaceAll(',', '.')
+                      .trim();
                   final preco = double.tryParse(precoText) ?? 0.0;
 
                   if (nome.isNotEmpty && barraca.id != null) {
@@ -116,7 +111,11 @@ class DetalhesBarracaView extends ConsumerWidget {
   }
 
   // --- MODAL: MENU DE OPÇÕES DO PRODUTO (EDITAR / EXCLUIR) ---
-  void _exibirOpcoesProduto(BuildContext context, WidgetRef ref, Produto produto) {
+  void _exibirOpcoesProduto(
+    BuildContext context,
+    WidgetRef ref,
+    Produto produto,
+  ) {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -128,18 +127,12 @@ class DetalhesBarracaView extends ConsumerWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
               Text(
                 produto.nome,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const Divider(),
               ListTile(
@@ -166,9 +159,15 @@ class DetalhesBarracaView extends ConsumerWidget {
   }
 
   // --- MODAL: EDITAR PRODUTO ---
-  void _abrirModalEditarProduto(BuildContext context, WidgetRef ref, Produto produto) {
+  void _abrirModalEditarProduto(
+    BuildContext context,
+    WidgetRef ref,
+    Produto produto,
+  ) {
     final nomeController = TextEditingController(text: produto.nome);
-    final precoController = TextEditingController(text: produto.preco.toStringAsFixed(2));
+    final precoController = TextEditingController(
+      text: produto.preco.toStringAsFixed(2),
+    );
 
     showModalBottomSheet(
       context: context,
@@ -186,20 +185,10 @@ class DetalhesBarracaView extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 16),
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
             Text(
               'Editar Produto',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(context).textTheme.titleLarge
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             TextField(
@@ -227,7 +216,9 @@ class DetalhesBarracaView extends ConsumerWidget {
               child: ElevatedButton(
                 onPressed: () async {
                   final nome = nomeController.text.trim();
-                  final precoText = precoController.text.replaceAll(',', '.').trim();
+                  final precoText = precoController.text
+                      .replaceAll(',', '.')
+                      .trim();
                   final preco = double.tryParse(precoText) ?? 0.0;
 
                   if (nome.isNotEmpty) {
@@ -274,7 +265,11 @@ class DetalhesBarracaView extends ConsumerWidget {
   }
 
   // --- DIÁLOGO: CONFIRMAR EXCLUSÃO DE PRODUTO ---
-  void _confirmarExclusaoProduto(BuildContext context, WidgetRef ref, Produto produto) {
+  void _confirmarExclusaoProduto(
+    BuildContext context,
+    WidgetRef ref,
+    Produto produto,
+  ) {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -325,10 +320,8 @@ class DetalhesBarracaView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final produtosAsync = ref.watch(produtosProvider(barraca.id!));
 
-    return Scaffold(
+    return EventlyScaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -337,10 +330,7 @@ class DetalhesBarracaView extends ConsumerWidget {
         ),
         title: Text(
           barraca.nome,
-          style: const TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
         ),
       ),
       body: Padding(
@@ -351,14 +341,20 @@ class DetalhesBarracaView extends ConsumerWidget {
             // Card com informações da Barraca
             Card(
               elevation: 0,
-              color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              color: Theme.of(context).colorScheme.primaryContainer
+                  .withOpacity(0.3),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(12.0),
                 child: Row(
                   children: [
-                    Icon(Icons.category_outlined,
-                        size: 20, color: Theme.of(context).colorScheme.primary),
+                    Icon(
+                      Icons.category_outlined,
+                      size: 20,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -381,9 +377,8 @@ class DetalhesBarracaView extends ConsumerWidget {
               children: [
                 Text(
                   'Produtos Cadastrados',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(context).textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 if (!somenteLeitura)
                   ElevatedButton.icon(
@@ -405,7 +400,9 @@ class DetalhesBarracaView extends ConsumerWidget {
                     return Center(
                       child: Text(
                         'Nenhum produto cadastrado para esta barraca.',
-                        style: TextStyle(color: Colors.grey[600]),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     );
                   }
@@ -435,7 +432,9 @@ class DetalhesBarracaView extends ConsumerWidget {
                             ),
                             title: Text(
                               item.nome,
-                              style: const TextStyle(fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             subtitle: Text(
                               'R\$ ${item.preco.toStringAsFixed(2)}',
@@ -444,6 +443,17 @@ class DetalhesBarracaView extends ConsumerWidget {
                                 color: Colors.green,
                               ),
                             ),
+                            trailing: somenteLeitura
+                                ? null
+                                : IconButton(
+                                    tooltip: 'Opções do produto',
+                                    icon: const Icon(Icons.more_horiz),
+                                    onPressed: () => _exibirOpcoesProduto(
+                                      context,
+                                      ref,
+                                      item,
+                                    ),
+                                  ),
                             onLongPress: somenteLeitura
                                 ? null
                                 : () {

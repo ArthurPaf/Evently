@@ -1,5 +1,8 @@
+import '../widgets/evently_scaffold.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../providers/administrador_provider.dart';
 
 class CadastrarAdministradorView extends ConsumerStatefulWidget {
@@ -10,7 +13,8 @@ class CadastrarAdministradorView extends ConsumerStatefulWidget {
       _CadastrarAdministradorViewState();
 }
 
-class _CadastrarAdministradorViewState extends ConsumerState<CadastrarAdministradorView> {
+class _CadastrarAdministradorViewState
+    extends ConsumerState<CadastrarAdministradorView> {
   final _formKey = GlobalKey<FormState>();
   final _nomeController = TextEditingController();
   final _emailController = TextEditingController();
@@ -30,7 +34,9 @@ class _CadastrarAdministradorViewState extends ConsumerState<CadastrarAdministra
 
     setState(() => _carregando = true);
 
-    final resultado = await ref.read(administradorServiceProvider).criarAdministrador(
+    final resultado = await ref
+        .read(administradorServiceProvider)
+        .criarAdministrador(
           nome: _nomeController.text.trim(),
           email: _emailController.text.trim(),
           senha: _senhaController.text,
@@ -60,12 +66,9 @@ class _CadastrarAdministradorViewState extends ConsumerState<CadastrarAdministra
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Cadastrar Administrador'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
-      ),
+    return EventlyScaffold(
+      maxWidth: 760,
+      appBar: AppBar(title: const Text('Cadastrar Administrador')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(

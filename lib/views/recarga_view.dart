@@ -1,13 +1,20 @@
+import '../widgets/evently_scaffold.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+
 import '../providers/transacao_provider.dart';
 
 class RecargaView extends ConsumerStatefulWidget {
   final int eventoId;
   final String nomeEvento;
 
-  const RecargaView({super.key, required this.eventoId, required this.nomeEvento});
+  const RecargaView({
+    super.key,
+    required this.eventoId,
+    required this.nomeEvento,
+  });
 
   @override
   ConsumerState<RecargaView> createState() => _RecargaViewState();
@@ -33,14 +40,18 @@ class _RecargaViewState extends ConsumerState<RecargaView> {
 
     if (codigo.isEmpty || valor <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Informe o código do cliente e um valor válido.')),
+        const SnackBar(
+          content: Text('Informe o código do cliente e um valor válido.'),
+        ),
       );
       return;
     }
 
     setState(() => _carregando = true);
 
-    final resultado = await ref.read(transacaoServiceProvider).realizarRecarga(
+    final resultado = await ref
+        .read(transacaoServiceProvider)
+        .realizarRecarga(
           eventoId: widget.eventoId,
           codigoIdentificador: codigo,
           valor: valor,
@@ -102,12 +113,9 @@ class _RecargaViewState extends ConsumerState<RecargaView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Recarga - ${widget.nomeEvento}'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
-      ),
+    return EventlyScaffold(
+      maxWidth: 760,
+      appBar: AppBar(title: Text('Recarga - ${widget.nomeEvento}')),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 480),
@@ -140,7 +148,9 @@ class _RecargaViewState extends ConsumerState<RecargaView> {
                 const SizedBox(height: 12),
                 TextField(
                   controller: _valorController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   decoration: const InputDecoration(
                     labelText: 'Valor da recarga (R\$)',
                     prefixIcon: Icon(Icons.attach_money),
@@ -155,8 +165,12 @@ class _RecargaViewState extends ConsumerState<RecargaView> {
                     onPressed: _carregando ? null : _confirmarRecarga,
                     child: _carregando
                         ? const SizedBox(
-                            width: 20, height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
                           )
                         : const Text('Confirmar Recarga'),
                   ),

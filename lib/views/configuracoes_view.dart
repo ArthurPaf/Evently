@@ -1,5 +1,8 @@
+import '../widgets/evently_scaffold.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../providers/auth_provider.dart';
 import '../providers/theme_provider.dart';
 
@@ -12,12 +15,9 @@ class ConfiguracoesView extends ConsumerWidget {
     final isEscuro = themeMode == ThemeMode.dark;
     final authState = ref.watch(authProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Configurações'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
-      ),
+    return EventlyScaffold(
+      maxWidth: 760,
+      appBar: AppBar(title: const Text('Configurações')),
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: 8),
         children: [
@@ -25,7 +25,11 @@ class ConfiguracoesView extends ConsumerWidget {
             padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: Text(
               'APARÊNCIA',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+                letterSpacing: 1,
+              ),
             ),
           ),
           SwitchListTile(
@@ -43,7 +47,11 @@ class ConfiguracoesView extends ConsumerWidget {
             padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
             child: Text(
               'CONTA',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+                letterSpacing: 1,
+              ),
             ),
           ),
           ListTile(
@@ -62,13 +70,19 @@ class ConfiguracoesView extends ConsumerWidget {
             padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
             child: Text(
               'SOBRE',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+                letterSpacing: 1,
+              ),
             ),
           ),
           const ListTile(
             leading: Icon(Icons.info_outline),
             title: Text('Evently'),
-            subtitle: Text('Plataforma de gestão e automação de vendas internas em eventos'),
+            subtitle: Text(
+              'Plataforma de gestão e automação de vendas internas em eventos',
+            ),
           ),
           const ListTile(
             leading: Icon(Icons.numbers_outlined),

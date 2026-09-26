@@ -2,7 +2,7 @@ import enum
 import uuid
 from datetime import datetime
 from sqlalchemy import (
-    Column, Integer, Float, String, DateTime, ForeignKey, Enum, UniqueConstraint
+    Column, Integer, Float, String, DateTime, ForeignKey, Enum, Boolean, UniqueConstraint
 )
 from sqlalchemy.orm import relationship
 from app.database import Base
@@ -11,6 +11,8 @@ from app.database import Base
 class TipoTransacao(str, enum.Enum):
     RECARGA = "recarga"
     VENDA = "venda"
+    ESTORNO = "estorno"
+    REEMBOLSO = "reembolso"
 
 
 def gerar_codigo_identificador() -> str:
@@ -40,7 +42,8 @@ class Carteira(Base):
     cliente = relationship("Usuario")
     evento = relationship("Evento")
     transacoes = relationship(
-        "Transacao", back_populates="carteira", cascade="all, delete-orphan"
+        "Transacao", back_populates="carteira", cascade="all, delete-orphan",
+        foreign_keys="Transacao.carteira_id",
     )
 
 
@@ -51,15 +54,28 @@ class Transacao(Base):
     carteira_id = Column(Integer, ForeignKey("carteiras.id", ondelete="CASCADE"), nullable=False)
     tipo = Column(Enum(TipoTransacao), nullable=False)
     valor_total = Column(Float, nullable=False)
-    barraca_id = Column(Integer, ForeignKey("barracas.id"), nullable=True)  # só em vendas
-    realizado_por_id = Column(Integer, ForeignKey("usuarios.id"), nullable=True)  # vendedor/organizador/admin
+    barraca_id = Column(Integer, ForeignKey("barracas.id"), nullable=True)  # só em vendas/estornos
+    realizado_por_id = Column(Integer, ForeignKey("usuarios.id"), nullable=True)  # quem processou
     data_hora = Column(DateTime, nullable=False, default=datetime.utcnow)
 
-    carteira = relationship("Carteira", back_populates="transacoes")
+    # Preenchidos apenas quando aplicável:
+    estornada = Column(Boolean, nullable=False, default=False)  # true em VENDAS que foram estornadas
+    estorno_de_id = Column(Integer, ForeignKey("transacoes.id"), nullable=True)  # preenchido em registros tipo ESTORNO
+
+    carteira = relationship(
+        "Carteira", back_populates="transacoes", foreign_keys=[carteira_id]
+    )
     barraca = relationship("Barraca")
     itens = relationship(
         "ItemTransacao", back_populates="transacao", cascade="all, delete-orphan"
     )
+    estorno_de = relationship("Transacao", remote_side=[id])
+
+    @property
+    def nome_cliente(self):
+        if self.carteira and self.carteira.cliente:
+            return self.carteira.cliente.nome
+        return None
 
 
 class ItemTransacao(Base):

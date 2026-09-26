@@ -1,3 +1,5 @@
+import 'theme/evently_theme.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_web_plugins/flutter_web_plugins.dart';
@@ -8,11 +10,7 @@ import 'package:flutter_application/providers/theme_provider.dart';
 
 void main() {
   usePathUrlStrategy(); // remove o "#" da URL no Flutter Web (ex: /evento/3 em vez de /#/evento/3)
-  runApp(
-    const ProviderScope(
-      child: MyApp(),
-    ),
-  );
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends ConsumerWidget {
@@ -25,20 +23,9 @@ class MyApp extends ConsumerWidget {
     return MaterialApp(
       title: 'Evently',
       themeMode: themeMode,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepPurple,
-          brightness: Brightness.light,
-        ),
-      ),
-      darkTheme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepPurple,
-          brightness: Brightness.dark,
-        ),
-      ),
+      debugShowCheckedModeBanner: false,
+      theme: EventlyTheme.build(Brightness.light),
+      darkTheme: EventlyTheme.build(Brightness.dark),
       // Sem "home": a rota inicial é lida direto da URL do navegador.
       onGenerateRoute: (settings) {
         final uri = Uri.parse(settings.name ?? '/');
@@ -47,11 +34,14 @@ class MyApp extends ConsumerWidget {
         if (uri.path == '/redefinir-senha') {
           final token = uri.queryParameters['token'];
           final eventoIdParam = uri.queryParameters['evento_id'];
-          final eventoId = eventoIdParam != null ? int.tryParse(eventoIdParam) : null;
+          final eventoId = eventoIdParam != null
+              ? int.tryParse(eventoIdParam)
+              : null;
 
           if (token != null && token.isNotEmpty) {
             return MaterialPageRoute(
-              builder: (_) => RedefinirSenhaView(token: token, eventoId: eventoId),
+              builder: (_) =>
+                  RedefinirSenhaView(token: token, eventoId: eventoId),
             );
           }
         }

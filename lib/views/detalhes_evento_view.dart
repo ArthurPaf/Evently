@@ -1,11 +1,18 @@
+import '../widgets/evently_scaffold.dart';
+
 import 'dart:html' as html;
 import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+
+import 'clientes_evento_view.dart';
+
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_application/services/barraca_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+
 import '../models/evento_model.dart';
 import '../models/barraca_model.dart';
 import '../providers/barraca_provider.dart';
@@ -46,7 +53,10 @@ class DetalhesEventoView extends ConsumerWidget {
   void _copiarLink(BuildContext context) {
     Clipboard.setData(ClipboardData(text: _linkDoEvento()));
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Link copiado!'), backgroundColor: Colors.green),
+      const SnackBar(
+        content: Text('Link copiado!'),
+        backgroundColor: Colors.green,
+      ),
     );
   }
 
@@ -67,19 +77,28 @@ class DetalhesEventoView extends ConsumerWidget {
       final blob = html.Blob([bytes], 'image/png');
       final url = html.Url.createObjectUrlFromBlob(blob);
       html.AnchorElement(href: url)
-        ..setAttribute('download', 'qrcode_${evento.nome}.png'.replaceAll(' ', '_'))
+        ..setAttribute(
+          'download',
+          'qrcode_${evento.nome}.png'.replaceAll(' ', '_'),
+        )
         ..click();
       html.Url.revokeObjectUrl(url);
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('QR Code baixado!'), backgroundColor: Colors.green),
+          const SnackBar(
+            content: Text('QR Code baixado!'),
+            backgroundColor: Colors.green,
+          ),
         );
       }
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao baixar QR Code: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Erro ao baixar QR Code: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -107,21 +126,30 @@ class DetalhesEventoView extends ConsumerWidget {
                 const SizedBox(width: 8),
                 Text(
                   'Link de acesso para clientes',
-                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue.shade700),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue.shade700,
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 4),
             Text(
               'Compartilhe este link (ou o QR Code) para que os clientes se cadastrem e acessem o saldo digital deste evento.',
-              style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(8),
@@ -158,7 +186,9 @@ class DetalhesEventoView extends ConsumerWidget {
                     size: 150,
                     backgroundColor: Colors.white,
                     eyeStyle: const QrEyeStyle(color: Colors.black),
-                    dataModuleStyle: const QrDataModuleStyle(color: Colors.black),
+                    dataModuleStyle: const QrDataModuleStyle(
+                      color: Colors.black,
+                    ),
                   ),
                 ),
               ),
@@ -175,7 +205,10 @@ class DetalhesEventoView extends ConsumerWidget {
             Center(
               child: Text(
                 'Salve a imagem para imprimir em cartazes ou compartilhar',
-                style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
           ],
@@ -213,13 +246,19 @@ class DetalhesEventoView extends ConsumerWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.warning_amber_rounded, color: Colors.orange),
+                    const Icon(
+                      Icons.warning_amber_rounded,
+                      color: Colors.orange,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'O período do evento ainda não terminou (vai até ${_converterParaBR(evento.dataFim)}). '
                         'Tem certeza que deseja encerrar mesmo sem ter cumprido o período todo?',
-                        style: const TextStyle(color: Colors.deepOrange, fontSize: 13),
+                        style: const TextStyle(
+                          color: Colors.deepOrange,
+                          fontSize: 13,
+                        ),
                       ),
                     ),
                   ],
@@ -241,11 +280,14 @@ class DetalhesEventoView extends ConsumerWidget {
             onPressed: () async {
               Navigator.pop(ctx);
 
-              final resultado = await ref.read(eventosProvider.notifier).encerrarEvento(evento.id);
+              final resultado = await ref
+                  .read(eventosProvider.notifier)
+                  .encerrarEvento(evento.id);
 
               if (context.mounted) {
                 final bool sucesso = resultado['sucesso'] ?? false;
-                final String mensagem = resultado['mensagem'] ?? 'Erro ao encerrar o evento.';
+                final String mensagem =
+                    resultado['mensagem'] ?? 'Erro ao encerrar o evento.';
 
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -291,20 +333,10 @@ class DetalhesEventoView extends ConsumerWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(
-                    width: 40,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
                   Text(
                     'Nova Barraca',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                    style: Theme.of(context).textTheme.titleLarge
+                        ?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 16),
                   TextField(
@@ -329,9 +361,8 @@ class DetalhesEventoView extends ConsumerWidget {
                     alignment: Alignment.centerLeft,
                     child: Text(
                       'Vendedores responsáveis',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                      style: Theme.of(context).textTheme.titleSmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -344,7 +375,8 @@ class DetalhesEventoView extends ConsumerWidget {
                           padding: EdgeInsets.all(16.0),
                           child: Center(child: CircularProgressIndicator()),
                         ),
-                        error: (err, _) => Text('Erro ao carregar vendedores: $err'),
+                        error: (err, _) =>
+                            Text('Erro ao carregar vendedores: $err'),
                         data: (vendedores) {
                           if (vendedores.isEmpty) {
                             return const Text(
@@ -362,7 +394,8 @@ class DetalhesEventoView extends ConsumerWidget {
                             child: ListView(
                               shrinkWrap: true,
                               children: vendedores.map((Vendedor v) {
-                                final selecionado = vendedoresSelecionados.contains(v.id);
+                                final selecionado = vendedoresSelecionados
+                                    .contains(v.id);
                                 return CheckboxListTile(
                                   dense: true,
                                   title: Text(v.nome),
@@ -391,7 +424,8 @@ class DetalhesEventoView extends ConsumerWidget {
                     height: 48,
                     child: ElevatedButton(
                       onPressed: () async {
-                        if (nomeController.text.trim().isNotEmpty && evento.id != null) {
+                        if (nomeController.text.trim().isNotEmpty &&
+                            evento.id != null) {
                           final novaBarraca = Barraca(
                             nome: nomeController.text.trim(),
                             tipo: tipoController.text.trim(),
@@ -418,7 +452,10 @@ class DetalhesEventoView extends ConsumerWidget {
                       },
                       child: const Text(
                         'Salvar Barraca',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
                     ),
                   ),
@@ -432,7 +469,11 @@ class DetalhesEventoView extends ConsumerWidget {
   }
 
   // --- MENU INFERIOR AO SEGURAR O CARD ---
-  void _exibirOpcoesBarraca(BuildContext context, WidgetRef ref, Barraca barraca) {
+  void _exibirOpcoesBarraca(
+    BuildContext context,
+    WidgetRef ref,
+    Barraca barraca,
+  ) {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -444,18 +485,12 @@ class DetalhesEventoView extends ConsumerWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
               Text(
                 barraca.nome,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const Divider(),
               ListTile(
@@ -482,11 +517,16 @@ class DetalhesEventoView extends ConsumerWidget {
   }
 
   // --- MODAL: EDITAR BARRACA ---
-  void _abrirModalEditarBarraca(BuildContext context, WidgetRef ref, Barraca barraca) {
+  void _abrirModalEditarBarraca(
+    BuildContext context,
+    WidgetRef ref,
+    Barraca barraca,
+  ) {
     final nomeController = TextEditingController(text: barraca.nome);
     final tipoController = TextEditingController(text: barraca.tipo);
-    final List<int> vendedoresSelecionados =
-        barraca.vendedores.map((v) => v.id).toList();
+    final List<int> vendedoresSelecionados = barraca.vendedores
+        .map((v) => v.id)
+        .toList();
 
     showModalBottomSheet(
       context: context,
@@ -507,20 +547,10 @@ class DetalhesEventoView extends ConsumerWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(
-                    width: 40,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
                   Text(
                     'Editar Barraca',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                    style: Theme.of(context).textTheme.titleLarge
+                        ?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 16),
                   TextField(
@@ -545,9 +575,8 @@ class DetalhesEventoView extends ConsumerWidget {
                     alignment: Alignment.centerLeft,
                     child: Text(
                       'Vendedores responsáveis',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                      style: Theme.of(context).textTheme.titleSmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -560,7 +589,8 @@ class DetalhesEventoView extends ConsumerWidget {
                           padding: EdgeInsets.all(16.0),
                           child: Center(child: CircularProgressIndicator()),
                         ),
-                        error: (err, _) => Text('Erro ao carregar vendedores: $err'),
+                        error: (err, _) =>
+                            Text('Erro ao carregar vendedores: $err'),
                         data: (vendedores) {
                           if (vendedores.isEmpty) {
                             return const Text(
@@ -578,7 +608,8 @@ class DetalhesEventoView extends ConsumerWidget {
                             child: ListView(
                               shrinkWrap: true,
                               children: vendedores.map((Vendedor v) {
-                                final selecionado = vendedoresSelecionados.contains(v.id);
+                                final selecionado = vendedoresSelecionados
+                                    .contains(v.id);
                                 return CheckboxListTile(
                                   dense: true,
                                   title: Text(v.nome),
@@ -625,7 +656,9 @@ class DetalhesEventoView extends ConsumerWidget {
                             Navigator.pop(modalContext);
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('Barraca atualizada com sucesso!'),
+                                content: Text(
+                                  'Barraca atualizada com sucesso!',
+                                ),
                                 backgroundColor: Colors.green,
                               ),
                             );
@@ -641,7 +674,10 @@ class DetalhesEventoView extends ConsumerWidget {
                       },
                       child: const Text(
                         'Salvar Alterações',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
                     ),
                   ),
@@ -655,7 +691,11 @@ class DetalhesEventoView extends ConsumerWidget {
   }
 
   // --- DIÁLOGO: CONFIRMAR EXCLUSÃO ---
-  void _confirmarExclusaoBarraca(BuildContext context, WidgetRef ref, Barraca barraca) {
+  void _confirmarExclusaoBarraca(
+    BuildContext context,
+    WidgetRef ref,
+    Barraca barraca,
+  ) {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -708,11 +748,25 @@ class DetalhesEventoView extends ConsumerWidget {
     final authState = ref.watch(authProvider);
     final isOrganizador = authState.perfil == 'organizador';
 
-    return Scaffold(
+    return EventlyScaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
         centerTitle: true,
+        actions: [
+          if (isOrganizador)
+            IconButton(
+              tooltip: 'Clientes do evento',
+              icon: const Icon(Icons.people_outline),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ClientesEventoView(
+                    eventoId: evento.id,
+                    nomeEvento: evento.nome,
+                  ),
+                ),
+              ),
+            ),
+        ],
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           tooltip: 'Voltar',
@@ -720,194 +774,217 @@ class DetalhesEventoView extends ConsumerWidget {
         ),
         title: Text(
           evento.nome,
-          style: const TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Informações do Evento
-            Card(
-              elevation: 0,
-              color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.calendar_month_outlined,
-                            size: 20, color: Theme.of(context).colorScheme.primary),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Período: ${_converterParaBR(evento.dataInicio)} até ${_converterParaBR(evento.dataFim)}',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ),
-                      ],
+      body: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) => [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Informações do Evento
+                  Card(
+                    elevation: 0,
+                    color: Theme.of(context).colorScheme.primaryContainer
+                        .withOpacity(0.3),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    if (evento.local.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Row(
+                    child: Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: Column(
                         children: [
-                          Icon(Icons.location_on_outlined,
-                              size: 20, color: Theme.of(context).colorScheme.primary),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Local: ${evento.local}',
-                              style: TextStyle(
-                                color: Colors.grey[800],
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // --- LINK DE ACESSO PARA CLIENTES (só enquanto o evento está ativo) ---
-            if (!evento.encerrado) ...[
-              _buildCardLinkCliente(context),
-              const SizedBox(height: 12),
-            ],
-
-            // --- BOTÃO / SELO DE ENCERRAMENTO (só organizador) ---
-            if (isOrganizador)
-              evento.encerrado
-                  ? Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Center(
-                        child: Text(
-                          'EVENTO ENCERRADO',
-                          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black54),
-                        ),
-                      ),
-                    )
-                  : SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.red,
-                          side: const BorderSide(color: Colors.red),
-                        ),
-                        onPressed: () => _confirmarEncerramento(context, ref),
-                        icon: const Icon(Icons.stop_circle_outlined),
-                        label: const Text('Encerrar Evento'),
-                      ),
-                    ),
-            const SizedBox(height: 20),
-
-            // Cabeçalho da Lista
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Barracas do Evento',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-                if (!evento.encerrado)
-                  ElevatedButton.icon(
-                    onPressed: () => _abrirModalNovaBarraca(context, ref),
-                    icon: const Icon(Icons.add, size: 18),
-                    label: const Text('Barraca'),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 10),
-
-            // Lista de Barracas
-            Expanded(
-              child: barracasAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (error, stack) => Center(child: Text('Erro: $error')),
-                data: (barracas) {
-                  if (barracas.isEmpty) {
-                    return Center(
-                      child: Text(
-                        'Nenhuma barraca cadastrada ainda.',
-                        style: TextStyle(color: Colors.grey[600]),
-                      ),
-                    );
-                  }
-
-                  return RefreshIndicator(
-                    onRefresh: () async {
-                      ref.invalidate(barracasProvider(evento.id!));
-                    },
-                    child: ListView.builder(
-                      itemCount: barracas.length,
-                      itemBuilder: (context, index) {
-                        final item = barracas[index];
-
-                        return Card(
-                          elevation: 1,
-                          margin: const EdgeInsets.symmetric(vertical: 6),
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: Theme.of(context)
-                                  .colorScheme
-                                  .primary
-                                  .withOpacity(0.1),
-                              child: Icon(
-                                Icons.store,
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.calendar_month_outlined,
+                                size: 20,
                                 color: Theme.of(context).colorScheme.primary,
                               ),
-                            ),
-                            title: Text(
-                              item.nome,
-                              style: const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            subtitle: Text(
-                              item.tipo.isEmpty ? 'Sem categoria' : item.tipo,
-                            ),
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => DetalhesBarracaView(
-                                    barraca: item,
-                                    somenteLeitura: evento.encerrado,
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Período: ${_converterParaBR(evento.dataInicio)} até ${_converterParaBR(evento.dataFim)}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
                                   ),
                                 ),
-                              );
-                            },
-                            onLongPress: evento.encerrado
-                                ? null
-                                : () {
-                                    _exibirOpcoesBarraca(context, ref, item);
-                                  },
+                              ),
+                            ],
+                          ),
+                          if (evento.local.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.location_on_outlined,
+                                  size: 20,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Local: ${evento.local}',
+                                    style: TextStyle(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // --- LINK DE ACESSO PARA CLIENTES (só enquanto o evento está ativo) ---
+                  if (!evento.encerrado) ...[
+                    _buildCardLinkCliente(context),
+                    const SizedBox(height: 12),
+                  ],
+
+                  // --- BOTÃO / SELO DE ENCERRAMENTO (só organizador) ---
+                  if (isOrganizador)
+                    evento.encerrado
+                        ? Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade300,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Center(
+                              child: Text(
+                                'EVENTO ENCERRADO',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black54,
+                                ),
+                              ),
+                            ),
+                          )
+                        : SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.red,
+                                side: const BorderSide(color: Colors.red),
+                              ),
+                              onPressed: () =>
+                                  _confirmarEncerramento(context, ref),
+                              icon: const Icon(Icons.stop_circle_outlined),
+                              label: const Text('Encerrar Evento'),
+                            ),
+                          ),
+                  const SizedBox(height: 20),
+
+                  // Cabeçalho da Lista
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Barracas do Evento',
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      if (!evento.encerrado)
+                        ElevatedButton.icon(
+                          onPressed: () => _abrirModalNovaBarraca(context, ref),
+                          icon: const Icon(Icons.add, size: 18),
+                          label: const Text('Barraca'),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                ],
+              ),
+            ),
+          ),
+        ],
+        body: barracasAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, stack) => Center(child: Text('Erro: $error')),
+          data: (barracas) {
+            if (barracas.isEmpty) {
+              return Center(
+                child: Text(
+                  'Nenhuma barraca cadastrada ainda.',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              );
+            }
+
+            return RefreshIndicator(
+              onRefresh: () async {
+                ref.invalidate(barracasProvider(evento.id!));
+              },
+              child: ListView.builder(
+                itemCount: barracas.length,
+                itemBuilder: (context, index) {
+                  final item = barracas[index];
+
+                  return Card(
+                    elevation: 1,
+                    margin: const EdgeInsets.symmetric(vertical: 6),
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: Theme.of(context).colorScheme.primary
+                            .withOpacity(0.1),
+                        child: Icon(
+                          Icons.store,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                      title: Text(
+                        item.nome,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Text(
+                        item.tipo.isEmpty ? 'Sem categoria' : item.tipo,
+                      ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => DetalhesBarracaView(
+                              barraca: item,
+                              somenteLeitura: evento.encerrado,
+                            ),
                           ),
                         );
                       },
+                      trailing: evento.encerrado
+                          ? null
+                          : IconButton(
+                              tooltip: 'Opções da barraca',
+                              icon: const Icon(Icons.more_horiz),
+                              onPressed: () =>
+                                  _exibirOpcoesBarraca(context, ref, item),
+                            ),
+                      onLongPress: evento.encerrado
+                          ? null
+                          : () {
+                              _exibirOpcoesBarraca(context, ref, item);
+                            },
                     ),
                   );
                 },
               ),
-            ),
-          ],
+            );
+          },
         ),
       ),
     );

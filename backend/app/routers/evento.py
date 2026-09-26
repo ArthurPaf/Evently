@@ -5,12 +5,37 @@ from app.database import get_db
 from app import security
 from app.controllers import evento_controller
 from app.daos.evento_dao import EventoDAO
-from app.models import TipoPerfil
+from app.models import TipoPerfil, Carteira, Usuario
 from app.models.evento_model import Evento
 from app.permissions import usuario_gerencia_evento
 from app.schemas import evento_schema, barraca_schema
 
 router = APIRouter(prefix="/eventos", tags=["Gestão de Eventos"])
+
+
+@router.get("/{evento_id}/clientes")
+def listar_clientes_evento(
+    evento_id: int,
+    db: Session = Depends(get_db),
+    usuario: dict = Depends(security.get_usuario_atual),
+):
+    evento = db.query(Evento).filter(Evento.id == evento_id).first()
+    if not evento:
+        raise HTTPException(status_code=404, detail="Evento não encontrado.")
+    if (usuario["perfil"] != TipoPerfil.ORGANIZADOR.value
+            or evento.organizador_id != usuario["id"]):
+        raise HTTPException(status_code=403, detail="Apenas o organizador dono pode consultar os clientes deste evento.")
+    clientes = (
+        db.query(Usuario.id, Usuario.nome, Usuario.email, Carteira.saldo_digital)
+        .join(Carteira, Carteira.cliente_id == Usuario.id)
+        .filter(Carteira.evento_id == evento_id)
+        .order_by(Usuario.nome, Usuario.id)
+        .all()
+    )
+    return [
+        {"cliente_id": cliente_id, "nome": nome, "email": email, "saldo": saldo}
+        for cliente_id, nome, email, saldo in clientes
+    ]
 
 
 def _exigir_organizador(usuario: dict = Depends(security.get_usuario_atual)):

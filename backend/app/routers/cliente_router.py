@@ -5,9 +5,9 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.security import get_usuario_atual
 from app.models import TipoPerfil, Carteira, Transacao, Usuario, Evento
-from app.controllers.transacao_controller import buscar_ou_criar_carteira, realizar_recarga_propria
+from app.controllers.transacao_controller import buscar_ou_criar_carteira, realizar_recarga_propria, realizar_reembolso
 from app.email_utils import enviar_cartao_virtual
-from app.schemas.carteira_schema import CarteiraResponse, TransacaoResponse, RecargaPropriaCreate
+from app.schemas.carteira_schema import CarteiraResponse, TransacaoResponse, RecargaPropriaCreate, ReembolsoProprioCreate
 
 router = APIRouter(prefix="/clientes", tags=["Cliente / Carteira Digital"])
 
@@ -96,3 +96,25 @@ def recarregar_minha_carteira(
     Recarga simulada feita pelo próprio cliente (sem gateway de pagamento real).
     """
     return realizar_recarga_propria(db, usuario["id"], evento_id, dados.valor)
+
+
+@router.post("/eventos/{evento_id}/reembolsar", response_model=TransacaoResponse,
+             status_code=status.HTTP_201_CREATED)
+def reembolsar_minha_carteira(
+    evento_id: int,
+    dados: ReembolsoProprioCreate,
+    db: Session = Depends(get_db),
+    usuario: dict = Depends(_exigir_cliente),
+):
+    """Reembolso simulado do saldo do próprio cliente, sem transferência real."""
+    carteira = (
+        db.query(Carteira)
+        .filter(Carteira.cliente_id == usuario["id"], Carteira.evento_id == evento_id)
+        .first()
+    )
+    if not carteira:
+        raise HTTPException(status_code=404, detail="Você ainda não possui carteira para este evento.")
+    return realizar_reembolso(
+        db, evento_id, carteira.codigo_identificador, dados.valor,
+        realizado_por_id=usuario["id"],
+    )

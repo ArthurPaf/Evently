@@ -1,6 +1,10 @@
+import '../widgets/evently_scaffold.dart';
+
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+
 import '../screens/login_screen.dart';
 import 'cliente_entry_view.dart';
 
@@ -75,7 +79,9 @@ class _RedefinirSenhaViewState extends State<RedefinirSenhaView> {
       // Veio da tela do cliente: volta pro login daquele evento específico,
       // não pro login da equipe.
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => ClienteEntryView(eventoId: widget.eventoId!)),
+        MaterialPageRoute(
+          builder: (_) => ClienteEntryView(eventoId: widget.eventoId!),
+        ),
         (route) => false,
       );
     } else {
@@ -88,11 +94,10 @@ class _RedefinirSenhaViewState extends State<RedefinirSenhaView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return EventlyScaffold(
+      maxWidth: 760,
       appBar: AppBar(
         title: const Text('Redefinir Senha'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
         automaticallyImplyLeading: false,
       ),
       body: Center(
@@ -104,11 +109,18 @@ class _RedefinirSenhaViewState extends State<RedefinirSenhaView> {
                 ? Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.check_circle_outline, size: 64, color: Colors.green),
+                      const Icon(
+                        Icons.check_circle_outline,
+                        size: 64,
+                        color: Colors.green,
+                      ),
                       const SizedBox(height: 16),
                       const Text(
                         'Senha redefinida com sucesso!',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 24),
                       SizedBox(
@@ -142,7 +154,10 @@ class _RedefinirSenhaViewState extends State<RedefinirSenhaView> {
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(color: Colors.red.shade200),
                             ),
-                            child: Text(_erro!, style: const TextStyle(color: Colors.red)),
+                            child: Text(
+                              _erro!,
+                              style: const TextStyle(color: Colors.red),
+                            ),
                           ),
                           const SizedBox(height: 16),
                         ],
@@ -167,7 +182,9 @@ class _RedefinirSenhaViewState extends State<RedefinirSenhaView> {
                             prefixIcon: Icon(Icons.lock_outline),
                             border: OutlineInputBorder(),
                           ),
-                          validator: (v) => (v == null || v.isEmpty) ? 'Confirme a senha' : null,
+                          validator: (v) => (v == null || v.isEmpty)
+                              ? 'Confirme a senha'
+                              : null,
                         ),
                         const SizedBox(height: 20),
                         SizedBox(
@@ -176,8 +193,12 @@ class _RedefinirSenhaViewState extends State<RedefinirSenhaView> {
                             onPressed: _carregando ? null : _redefinir,
                             child: _carregando
                                 ? const SizedBox(
-                                    width: 20, height: 20,
-                                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
                                   )
                                 : const Text('Redefinir Senha'),
                           ),

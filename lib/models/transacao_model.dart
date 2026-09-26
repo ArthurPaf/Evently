@@ -23,10 +23,12 @@ class ItemVenda {
 
 class Transacao {
   final int id;
-  final String tipo; // "recarga" ou "venda"
+  final String tipo; // "recarga", "venda", "estorno" ou "reembolso"
   final double valorTotal;
   final DateTime dataHora;
   final int? barracaId;
+  final bool estornada;
+  final String? nomeCliente;
   final List<ItemVenda> itens;
 
   Transacao({
@@ -35,16 +37,15 @@ class Transacao {
     required this.valorTotal,
     required this.dataHora,
     this.barracaId,
+    this.estornada = false,
+    this.nomeCliente,
     this.itens = const [],
   });
 
   factory Transacao.fromJson(Map<String, dynamic> json) {
     final rawData = json['data_hora'] as String;
-    // O backend grava o horário em UTC (datetime.utcnow()). Se a string não
-    // vier com indicador de fuso ('Z'), o Dart assume "hora local" por
-    // padrão — o que causava o horário aparecer adiantado. Forçamos aqui a
-    // interpretação correta como UTC e convertemos para o horário do
-    // dispositivo.
+    // O backend grava o horário em UTC (datetime.utcnow()). Forçamos aqui a
+    // interpretação correta como UTC e convertemos para o horário local.
     final dataUtc = DateTime.parse(rawData.endsWith('Z') ? rawData : '${rawData}Z');
 
     return Transacao(
@@ -53,6 +54,8 @@ class Transacao {
       valorTotal: (json['valor_total'] as num).toDouble(),
       dataHora: dataUtc.toLocal(),
       barracaId: json['barraca_id'],
+      estornada: json['estornada'] ?? false,
+      nomeCliente: json['nome_cliente'] as String?,
       itens: json['itens'] != null
           ? (json['itens'] as List).map((i) => ItemVenda.fromJson(i)).toList()
           : [],

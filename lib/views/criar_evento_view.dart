@@ -1,5 +1,8 @@
+import '../widgets/evently_scaffold.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../models/evento_model.dart';
 import '../models/administrador_model.dart';
 import '../providers/evento_provider.dart';
@@ -76,10 +79,9 @@ class _CriarEventoViewState extends ConsumerState<CriarEventoView> {
   Widget build(BuildContext context) {
     final administradoresAsync = ref.watch(administradoresProvider);
 
-    return Scaffold(
+    return EventlyScaffold(
+      maxWidth: 760,
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
         title: const Text('Novo Evento'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -121,10 +123,14 @@ class _CriarEventoViewState extends ConsumerState<CriarEventoView> {
                   border: OutlineInputBorder(),
                 ),
                 child: Text(
-                  _dataInicio.isEmpty ? 'Selecione a data de início' : _dataInicio,
+                  _dataInicio.isEmpty
+                      ? 'Selecione a data de início'
+                      : _dataInicio,
                   style: TextStyle(
                     fontSize: 16,
-                    color: _dataInicio.isEmpty ? Colors.grey[600] : Colors.black87,
+                    color: _dataInicio.isEmpty
+                        ? Theme.of(context).colorScheme.onSurfaceVariant
+                        : Colors.black87,
                   ),
                 ),
               ),
@@ -146,7 +152,9 @@ class _CriarEventoViewState extends ConsumerState<CriarEventoView> {
                   _dataFim.isEmpty ? 'Selecione a data de término' : _dataFim,
                   style: TextStyle(
                     fontSize: 16,
-                    color: _dataFim.isEmpty ? Colors.grey[600] : Colors.black87,
+                    color: _dataFim.isEmpty
+                        ? Theme.of(context).colorScheme.onSurfaceVariant
+                        : Colors.black87,
                   ),
                 ),
               ),
@@ -159,9 +167,8 @@ class _CriarEventoViewState extends ConsumerState<CriarEventoView> {
               alignment: Alignment.centerLeft,
               child: Text(
                 'Administradores (opcional)',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: Theme.of(context).textTheme.titleSmall
+                    ?.copyWith(fontWeight: FontWeight.bold),
               ),
             ),
             const SizedBox(height: 4),
@@ -169,7 +176,10 @@ class _CriarEventoViewState extends ConsumerState<CriarEventoView> {
               alignment: Alignment.centerLeft,
               child: Text(
                 'Selecione quem, além de você, pode editar este evento e gerenciar suas barracas.',
-                style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontSize: 12,
+                ),
               ),
             ),
             const SizedBox(height: 8),
@@ -196,7 +206,9 @@ class _CriarEventoViewState extends ConsumerState<CriarEventoView> {
                   child: ListView(
                     shrinkWrap: true,
                     children: administradores.map((Administrador a) {
-                      final selecionado = _administradoresSelecionados.contains(a.id);
+                      final selecionado = _administradoresSelecionados.contains(
+                        a.id,
+                      );
                       return CheckboxListTile(
                         dense: true,
                         title: Text(a.nome),
@@ -244,7 +256,9 @@ class _CriarEventoViewState extends ConsumerState<CriarEventoView> {
                   if (dtFim.isBefore(dtInicio)) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('A data de término não pode ser anterior à data de início!'),
+                        content: Text(
+                          'A data de término não pode ser anterior à data de início!',
+                        ),
                         backgroundColor: Colors.orange,
                       ),
                     );
@@ -267,7 +281,8 @@ class _CriarEventoViewState extends ConsumerState<CriarEventoView> {
 
                   if (context.mounted) {
                     final bool sucesso = resultado['sucesso'] ?? false;
-                    final String mensagem = resultado['mensagem'] ?? 'Ocorreu um erro.';
+                    final String mensagem =
+                        resultado['mensagem'] ?? 'Ocorreu um erro.';
 
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(

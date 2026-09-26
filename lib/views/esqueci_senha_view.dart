@@ -1,4 +1,7 @@
+import '../widgets/evently_scaffold.dart';
+
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -58,12 +61,9 @@ class _EsqueciSenhaViewState extends State<EsqueciSenhaView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Recuperar Senha'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
-      ),
+    return EventlyScaffold(
+      maxWidth: 760,
+      appBar: AppBar(title: const Text('Recuperar Senha')),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 420),
@@ -73,7 +73,11 @@ class _EsqueciSenhaViewState extends State<EsqueciSenhaView> {
                 ? Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.mark_email_read_outlined, size: 64, color: Colors.green),
+                      const Icon(
+                        Icons.mark_email_read_outlined,
+                        size: 64,
+                        color: Colors.green,
+                      ),
                       const SizedBox(height: 16),
                       const Text(
                         'Se este e-mail estiver cadastrado, você vai receber um link de recuperação em instantes.',
@@ -110,7 +114,9 @@ class _EsqueciSenhaViewState extends State<EsqueciSenhaView> {
                             border: OutlineInputBorder(),
                           ),
                           validator: (v) {
-                            if (v == null || v.trim().isEmpty) return 'Informe o email';
+                            if (v == null || v.trim().isEmpty) {
+                              return 'Informe o email';
+                            }
                             if (!v.contains('@')) return 'Email inválido';
                             return null;
                           },
@@ -122,8 +128,12 @@ class _EsqueciSenhaViewState extends State<EsqueciSenhaView> {
                             onPressed: _carregando ? null : _enviarSolicitacao,
                             child: _carregando
                                 ? const SizedBox(
-                                    width: 20, height: 20,
-                                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
                                   )
                                 : const Text('Enviar link de recuperação'),
                           ),

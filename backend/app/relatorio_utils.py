@@ -1,4 +1,5 @@
 from io import BytesIO
+from xml.sax.saxutils import escape
 from datetime import datetime
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
@@ -79,6 +80,26 @@ def gerar_relatorio_pdf(nome_evento: str, dados: dict) -> bytes:
         elementos.append(_tabela_padrao(["Barraca", "Valor Total"], linhas, [10 * cm, 6 * cm]))
     else:
         elementos.append(Paragraph("Nenhuma venda registrada.", styles["Normal"]))
+
+    elementos.append(Paragraph("Vendedores que Mais Venderam", subtitulo_style))
+    elementos.append(Paragraph(
+        "Ordenado pelo valor vendido. Vendas estornadas não são contabilizadas.", styles["Normal"]
+    ))
+    vendedores = dados.get("vendas_por_vendedor", [])
+    if vendedores:
+        linhas = [
+            [str(i), Paragraph(escape(v["vendedor"]), styles["Normal"]),
+             str(v["numero_vendas"]), f"R$ {v['valor_total']:.2f}"]
+            for i, v in enumerate(vendedores, start=1)
+        ]
+        tabela = _tabela_padrao(
+            ["Posição", "Vendedor", "Vendas", "Valor Total"],
+            linhas, [2 * cm, 7 * cm, 3 * cm, 4 * cm],
+        )
+        tabela.repeatRows = 1
+        elementos.append(tabela)
+    else:
+        elementos.append(Paragraph("Nenhuma venda de vendedor registrada.", styles["Normal"]))
 
     # --- Vendas por período (dia + hora) ---
     elementos.append(Paragraph("Vendas por Período", subtitulo_style))

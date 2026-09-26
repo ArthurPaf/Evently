@@ -60,6 +60,29 @@ class ClienteService {
     throw Exception('Falha ao carregar extrato (${response.statusCode})');
   }
 
+  Future<Map<String, dynamic>> reembolsarPropriaCarteira({
+    required int eventoId,
+    double? valor,
+  }) async {
+    try {
+      final response = await _client.post(
+        Uri.parse('$_baseUrl/clientes/eventos/$eventoId/reembolsar'),
+        headers: await _headers(),
+        body: jsonEncode({if (valor != null) 'valor': valor}),
+      );
+      if (response.statusCode == 201) {
+        return {'sucesso': true, 'mensagem': 'Reembolso simulado realizado com sucesso!'};
+      }
+      final body = jsonDecode(response.body);
+      return {
+        'sucesso': false,
+        'mensagem': body['detail'] is String ? body['detail'] : 'Não foi possível realizar o reembolso.',
+      };
+    } catch (_) {
+      return {'sucesso': false, 'mensagem': 'Falha de conexão com o servidor.'};
+    }
+  }
+
   // Pagamento simulado: o próprio cliente adiciona crédito à carteira
   Future<Map<String, dynamic>> recarregarPropriaCarteira({
     required int eventoId,

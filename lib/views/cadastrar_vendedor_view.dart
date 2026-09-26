@@ -1,12 +1,16 @@
+import '../widgets/evently_scaffold.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../providers/vendedor_provider.dart';
 
 class CadastrarVendedorView extends ConsumerStatefulWidget {
   const CadastrarVendedorView({super.key});
 
   @override
-  ConsumerState<CadastrarVendedorView> createState() => _CadastrarVendedorViewState();
+  ConsumerState<CadastrarVendedorView> createState() =>
+      _CadastrarVendedorViewState();
 }
 
 class _CadastrarVendedorViewState extends ConsumerState<CadastrarVendedorView> {
@@ -29,7 +33,9 @@ class _CadastrarVendedorViewState extends ConsumerState<CadastrarVendedorView> {
 
     setState(() => _carregando = true);
 
-    final resultado = await ref.read(vendedorServiceProvider).criarVendedor(
+    final resultado = await ref
+        .read(vendedorServiceProvider)
+        .criarVendedor(
           nome: _nomeController.text.trim(),
           email: _emailController.text.trim(),
           senha: _senhaController.text,
@@ -60,12 +66,9 @@ class _CadastrarVendedorViewState extends ConsumerState<CadastrarVendedorView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Cadastrar Vendedor'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
-      ),
+    return EventlyScaffold(
+      maxWidth: 760,
+      appBar: AppBar(title: const Text('Cadastrar Vendedor')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
