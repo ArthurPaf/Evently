@@ -196,7 +196,7 @@ class DashboardView extends ConsumerWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Agrupado por dia e hora — cobre eventos de vários dias. Vendas estornadas não entram aqui.',
+                  'Agrupado por dia e hora — cobre eventos de vários dias. Os valores já descontam os estornos.',
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontSize: 12,
@@ -345,7 +345,7 @@ class DashboardView extends ConsumerWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Ordenado pelo valor vendido. Vendas estornadas não são contabilizadas.',
+                  'Ordenado pelo valor vendido, já descontando os estornos totais e parciais.',
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontSize: 12,

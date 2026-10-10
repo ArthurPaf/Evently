@@ -1,4 +1,5 @@
 import '../widgets/evently_scaffold.dart';
+import '../widgets/evently_panel.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,19 +15,6 @@ import '../screens/login_screen.dart';
 
 class PainelAdministradorView extends ConsumerWidget {
   const PainelAdministradorView({super.key});
-
-  String _converterParaBR(String dataISO) {
-    if (dataISO.isEmpty) return '';
-    try {
-      final data = DateTime.tryParse(dataISO);
-      if (data == null) return dataISO;
-      final dia = data.day.toString().padLeft(2, '0');
-      final mes = data.month.toString().padLeft(2, '0');
-      return '$dia/$mes/${data.year}';
-    } catch (_) {
-      return dataISO;
-    }
-  }
 
   void _exibirOpcoesEvento(BuildContext context, WidgetRef ref, Evento evento) {
     showModalBottomSheet(
@@ -275,95 +263,24 @@ class PainelAdministradorView extends ConsumerWidget {
           ],
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Olá, $nomeUsuario 👋',
-              style: Theme.of(context).textTheme.headlineSmall
-                  ?.copyWith(fontWeight: FontWeight.bold),
+      body: eventosAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, stack) => Center(child: Text('Erro ao carregar: $err')),
+        data: (eventos) => EventlyEventsPanel(
+          eventos: eventos,
+          title: 'Olá, $nomeUsuario 👋',
+          description: 'Toque em um evento para gerenciar barracas e produtos, ou segure para recarregar, reembolsar ou editar.',
+          actionLabel: 'Gerenciar evento',
+          onRefresh: () async {
+            ref.invalidate(meusEventosAdministradorProvider);
+          },
+          onOpen: (evento) => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => DetalhesEventoView(evento: evento),
             ),
-            const SizedBox(height: 4),
-            Text(
-              'Toque em um evento para gerenciar barracas e produtos, ou segure para recarregar, reembolsar ou editar.',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: eventosAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (err, stack) =>
-                    Center(child: Text('Erro ao carregar: $err')),
-                data: (eventos) {
-                  if (eventos.isEmpty) {
-                    return const Center(
-                      child: Text(
-                        'Você ainda não foi vinculado a nenhum evento.',
-                      ),
-                    );
-                  }
-
-                  return RefreshIndicator(
-                    onRefresh: () async =>
-                        ref.invalidate(meusEventosAdministradorProvider),
-                    child: ListView.builder(
-                      itemCount: eventos.length,
-                      itemBuilder: (context, index) {
-                        final evento = eventos[index];
-                        return Card(
-                          elevation: 1,
-                          margin: const EdgeInsets.symmetric(vertical: 6),
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: Theme.of(context)
-                                  .colorScheme
-                                  .primary
-                                  .withOpacity(0.1),
-                              child: Icon(
-                                Icons.event,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                            ),
-                            title: Text(
-                              evento.nome,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            subtitle: Text(
-                              '${_converterParaBR(evento.dataInicio)} até ${_converterParaBR(evento.dataFim)}',
-                            ),
-                            trailing: IconButton(
-                              tooltip: 'Opções do evento',
-                              icon: const Icon(Icons.more_horiz),
-                              onPressed: () =>
-                                  _exibirOpcoesEvento(context, ref, evento),
-                            ),
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      DetalhesEventoView(evento: evento),
-                                ),
-                              );
-                            },
-                            onLongPress: () {
-                              _exibirOpcoesEvento(context, ref, evento);
-                            },
-                          ),
-                        );
-                      },
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
+          ),
+          onOptions: (evento) => _exibirOpcoesEvento(context, ref, evento),
         ),
       ),
     );

@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'dart:typed_data';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
+
 import '../models/transacao_model.dart';
 
 const String _baseUrl = 'http://127.0.0.1:8000';
@@ -12,8 +14,8 @@ class TransacaoService {
   final FlutterSecureStorage _storage;
 
   TransacaoService({http.Client? client, FlutterSecureStorage? storage})
-      : _client = client ?? http.Client(),
-        _storage = storage ?? const FlutterSecureStorage();
+    : _client = client ?? http.Client(),
+      _storage = storage ?? const FlutterSecureStorage();
 
   Future<Map<String, String>> _headers() async {
     final token = await _storage.read(key: 'jwt_token');
@@ -46,7 +48,10 @@ class TransacaoService {
         return {'sucesso': true, 'mensagem': 'Recarga realizada com sucesso!'};
       }
       final body = jsonDecode(response.body);
-      return {'sucesso': false, 'mensagem': body['detail'] ?? 'Erro ao recarregar.'};
+      return {
+        'sucesso': false,
+        'mensagem': body['detail'] ?? 'Erro ao recarregar.',
+      };
     } catch (e) {
       return {'sucesso': false, 'mensagem': 'Falha de conexão com o servidor.'};
     }
@@ -75,7 +80,10 @@ class TransacaoService {
         return {'sucesso': true, 'mensagem': 'Venda realizada com sucesso!'};
       }
       final body = jsonDecode(response.body);
-      return {'sucesso': false, 'mensagem': body['detail'] ?? 'Erro ao vender.'};
+      return {
+        'sucesso': false,
+        'mensagem': body['detail'] ?? 'Erro ao vender.',
+      };
     } catch (e) {
       return {'sucesso': false, 'mensagem': 'Falha de conexão com o servidor.'};
     }
@@ -106,7 +114,9 @@ class TransacaoService {
 
   // Baixa o relatório em Excel (bytes brutos do arquivo)
   Future<Uint8List?> exportarDashboardExcel(int eventoId) async {
-    final url = Uri.parse('$_baseUrl/eventos/$eventoId/dashboard/exportar-excel');
+    final url = Uri.parse(
+      '$_baseUrl/eventos/$eventoId/dashboard/exportar-excel',
+    );
     final headers = await _headers();
     final response = await _client.get(url, headers: headers);
 
@@ -136,28 +146,47 @@ class TransacaoService {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        return {'sucesso': true, 'mensagem': 'Reembolso realizado com sucesso!'};
+        return {
+          'sucesso': true,
+          'mensagem': 'Reembolso realizado com sucesso!',
+        };
       }
       final body = jsonDecode(response.body);
-      return {'sucesso': false, 'mensagem': body['detail'] ?? 'Erro ao reembolsar.'};
+      return {
+        'sucesso': false,
+        'mensagem': body['detail'] ?? 'Erro ao reembolsar.',
+      };
     } catch (e) {
       return {'sucesso': false, 'mensagem': 'Falha de conexão com o servidor.'};
     }
   }
 
   // Estorna uma venda específica
-  Future<Map<String, dynamic>> estornarVenda(int transacaoId) async {
+  Future<Map<String, dynamic>> estornarVenda(
+    int transacaoId, {
+    List<Map<String, int>>? itens,
+  }) async {
     final url = Uri.parse('$_baseUrl/transacoes/$transacaoId/estornar');
     final headers = await _headers();
 
     try {
-      final response = await _client.post(url, headers: headers);
+      final response = await _client.post(
+        url,
+        headers: headers,
+        body: itens == null ? null : jsonEncode({'itens': itens}),
+      );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        return {'sucesso': true, 'mensagem': 'Venda estornada com sucesso!'};
+        return {'sucesso': true, 'mensagem': 'Estorno realizado com sucesso!'};
       }
       final body = jsonDecode(response.body);
-      return {'sucesso': false, 'mensagem': body['detail'] ?? 'Erro ao estornar.'};
+      final detalhe = body['detail'];
+      return {
+        'sucesso': false,
+        'mensagem': detalhe is String
+            ? detalhe
+            : 'Confira as quantidades informadas.',
+      };
     } catch (e) {
       return {'sucesso': false, 'mensagem': 'Falha de conexão com o servidor.'};
     }
@@ -181,14 +210,14 @@ final transacaoServiceProvider = Provider<TransacaoService>((ref) {
   return TransacaoService();
 });
 
-final dashboardProvider =
-    FutureProvider.autoDispose.family<Map<String, dynamic>, int>((ref, eventoId) async {
-  final service = ref.watch(transacaoServiceProvider);
-  return await service.buscarDashboard(eventoId);
-});
+final dashboardProvider = FutureProvider.autoDispose
+    .family<Map<String, dynamic>, int>((ref, eventoId) async {
+      final service = ref.watch(transacaoServiceProvider);
+      return await service.buscarDashboard(eventoId);
+    });
 
-final vendasDaBarracaProvider =
-    FutureProvider.autoDispose.family<List<Transacao>, int>((ref, barracaId) async {
-  final service = ref.watch(transacaoServiceProvider);
-  return await service.listarVendasDaBarraca(barracaId);
-});
+final vendasDaBarracaProvider = FutureProvider.autoDispose
+    .family<List<Transacao>, int>((ref, barracaId) async {
+      final service = ref.watch(transacaoServiceProvider);
+      return await service.listarVendasDaBarraca(barracaId);
+    });

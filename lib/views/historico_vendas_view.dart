@@ -1,6 +1,7 @@
 import '../widgets/evently_scaffold.dart';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/transacao_provider.dart';
@@ -16,52 +17,21 @@ class HistoricoVendasView extends ConsumerWidget {
     required this.nomeBarraca,
   });
 
-  void _confirmarEstorno(BuildContext context, WidgetRef ref, Transacao venda) {
-    showDialog(
+  Future<void> _confirmarEstorno(
+    BuildContext context,
+    WidgetRef ref,
+    Transacao venda,
+  ) async {
+    final sucesso = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Estornar Venda'),
-        content: Text(
-          'Cliente: ${venda.nomeCliente ?? 'Não identificado'}\n\n'
-          'Tem certeza que deseja estornar esta venda de R\$ ${venda.valorTotal.toStringAsFixed(2)}? '
-          'O valor será devolvido ao saldo do cliente.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () async {
-              Navigator.pop(ctx);
-
-              final resultado = await ref
-                  .read(transacaoServiceProvider)
-                  .estornarVenda(venda.id);
-
-              if (context.mounted) {
-                final bool sucesso = resultado['sucesso'] ?? false;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      resultado['mensagem'] ?? 'Erro desconhecido.',
-                    ),
-                    backgroundColor: sucesso ? Colors.green : Colors.red,
-                  ),
-                );
-
-                if (sucesso) {
-                  ref.invalidate(vendasDaBarracaProvider(barracaId));
-                }
-              }
-            },
-            child: const Text('Estornar'),
-          ),
-        ],
+      barrierDismissible: false,
+      builder: (_) => _EstornoDialog(venda: venda),
+    );
+    if (!context.mounted || sucesso != true) return;
+    ref.invalidate(vendasDaBarracaProvider(barracaId));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Estorno realizado e saldo devolvido ao cliente.'),
       ),
     );
   }
@@ -114,8 +84,12 @@ class HistoricoVendasView extends ConsumerWidget {
                       '${venda.dataHora.day.toString().padLeft(2, '0')}/'
                       '${venda.dataHora.month.toString().padLeft(2, '0')} às '
                       '${venda.dataHora.hour.toString().padLeft(2, '0')}:${venda.dataHora.minute.toString().padLeft(2, '0')}'
-                      '${venda.itens.isNotEmpty ? '\n${venda.itens.map((i) => '${i.quantidade}x ${i.nomeProduto}').join(', ')}' : ''}'
-                      '${venda.estornada ? '\nESTORNADA' : ''}',
+                      '${venda.itens.isNotEmpty ? '\n${venda.itens.map((i) => '${i.quantidade}x ${i.nomeProduto ?? 'Produto'}${i.quantidadeEstornada > 0 ? ' (${i.quantidadeEstornada} estornada(s))' : ''}').join('\n')}' : ''}'
+                      '${venda.estornada
+                          ? '\nESTORNADA'
+                          : venda.valorEstornado > 0
+                          ? '\nESTORNO PARCIAL: R\$ ${venda.valorEstornado.toStringAsFixed(2)}'
+                          : ''}',
                       style: venda.estornada
                           ? const TextStyle(
                               color: Colors.red,
@@ -140,6 +114,185 @@ class HistoricoVendasView extends ConsumerWidget {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class _EstornoDialog extends ConsumerStatefulWidget {
+  final Transacao venda;
+
+  const _EstornoDialog({required this.venda});
+
+  @override
+  ConsumerState<_EstornoDialog> createState() => _EstornoDialogState();
+}
+
+class _EstornoDialogState extends ConsumerState<_EstornoDialog> {
+  final _form = GlobalKey<FormState>();
+  late final List<ItemVenda> _itens;
+  late final Map<int, TextEditingController> _quantidades;
+  bool _enviando = false;
+  String? _erro;
+
+  @override
+  void initState() {
+    super.initState();
+    _itens = widget.venda.itens
+        .where((i) => i.quantidadeDisponivel > 0)
+        .toList();
+    _quantidades = {
+      for (final item in _itens)
+        item.id: TextEditingController(text: _itens.length == 1 ? '1' : '0'),
+    };
+  }
+
+  @override
+  void dispose() {
+    for (final controller in _quantidades.values) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  int _quantidade(ItemVenda item) =>
+      int.tryParse(_quantidades[item.id]!.text) ?? 0;
+
+  double get _valorSelecionado => _itens.fold(
+    0.0,
+    (total, item) => total + _quantidade(item) * item.precoUnitario,
+  );
+
+  Future<void> _estornar({required bool tudo}) async {
+    if (_enviando) return;
+    if (!tudo && !_form.currentState!.validate()) return;
+    final selecionados = [
+      for (final item in _itens)
+        if (_quantidade(item) > 0)
+          {'item_id': item.id, 'quantidade': _quantidade(item)},
+    ];
+    if (!tudo && selecionados.isEmpty) {
+      setState(() => _erro = 'Informe a quantidade de pelo menos um produto.');
+      return;
+    }
+    setState(() {
+      _enviando = true;
+      _erro = null;
+    });
+    final resultado = await ref
+        .read(transacaoServiceProvider)
+        .estornarVenda(widget.venda.id, itens: tudo ? null : selecionados);
+    if (!mounted) return;
+    setState(() => _enviando = false);
+    if (resultado['sucesso'] == true) {
+      Navigator.pop(context, true);
+    } else {
+      setState(
+        () => _erro = resultado['mensagem'] ?? 'Não foi possível estornar.',
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final venda = widget.venda;
+    return PopScope(
+      canPop: !_enviando,
+      child: AlertDialog(
+        title: const Text('Estornar venda'),
+        content: SizedBox(
+          width: 440,
+          child: SingleChildScrollView(
+            child: Form(
+              key: _form,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Cliente: ${venda.nomeCliente ?? 'Não identificado'}'),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'O valor das unidades estornadas será devolvido ao saldo do cliente.',
+                  ),
+                  if (_itens.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Digite quantas unidades deseja estornar de cada produto. Use 0 para manter o produto.',
+                    ),
+                  ],
+                  for (final item in _itens) ...[
+                    const SizedBox(height: 20),
+                    Text(
+                      item.nomeProduto ?? 'Produto',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${item.quantidadeDisponivel} unidade(s) disponível(is) · R\$ ${item.precoUnitario.toStringAsFixed(2)} cada',
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _quantidades[item.id],
+                      enabled: !_enviando,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      decoration: const InputDecoration(
+                        labelText: 'Quantidade a estornar',
+                      ),
+                      onChanged: (_) => setState(() => _erro = null),
+                      validator: (value) {
+                        final qtd = int.tryParse(value ?? '');
+                        if (qtd == null ||
+                            qtd < 0 ||
+                            qtd > item.quantidadeDisponivel) {
+                          return 'Informe de 0 a ${item.quantidadeDisponivel} unidades.';
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
+                  const SizedBox(height: 20),
+                  if (_itens.isNotEmpty)
+                    Text(
+                      'Valor selecionado: R\$ ${_valorSelecionado.toStringAsFixed(2)}',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  Text(
+                    'Estornar tudo devolve R\$ ${(venda.valorTotal - venda.valorEstornado).toStringAsFixed(2)} (todas as unidades restantes desta venda).',
+                  ),
+                  if (_erro != null) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      _erro!,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                  ],
+                  if (_enviando) ...[
+                    const SizedBox(height: 16),
+                    const LinearProgressIndicator(),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: _enviando ? null : () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          OutlinedButton(
+            onPressed: _enviando ? null : () => _estornar(tudo: true),
+            child: const Text('Estornar tudo'),
+          ),
+          if (_itens.isNotEmpty)
+            ElevatedButton(
+              onPressed: _enviando ? null : () => _estornar(tudo: false),
+              child: const Text('Estornar quantidade'),
+            ),
+        ],
       ),
     );
   }

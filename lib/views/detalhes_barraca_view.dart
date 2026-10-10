@@ -9,11 +9,13 @@ import '../providers/produto_provider.dart';
 
 class DetalhesBarracaView extends ConsumerWidget {
   final Barraca barraca;
+  final String nomeEvento;
   final bool somenteLeitura;
 
   const DetalhesBarracaView({
     super.key,
     required this.barraca,
+    required this.nomeEvento,
     this.somenteLeitura = false,
   });
 
@@ -331,6 +333,21 @@ class DetalhesBarracaView extends ConsumerWidget {
         title: Text(
           barraca.nome,
           style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(30),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Tooltip(
+              message: 'Evento: $nomeEvento',
+              child: Text(
+                'Evento: $nomeEvento',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ),
+          ),
         ),
       ),
       body: Padding(

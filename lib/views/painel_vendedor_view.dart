@@ -1,4 +1,5 @@
 import '../widgets/evently_scaffold.dart';
+import '../widgets/evently_panel.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_application/providers/barraca_provider.dart';
@@ -8,7 +9,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/evento_model.dart';
 import '../models/barraca_model.dart';
 import '../providers/auth_provider.dart';
-import '../providers/vendedor_barraca_provider.dart';
 import '../providers/produto_provider.dart';
 import '../screens/login_screen.dart';
 
@@ -105,89 +105,23 @@ class PainelVendedorView extends ConsumerWidget {
           ],
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Olá, $nomeUsuario 👋',
-              style: Theme.of(context).textTheme.headlineSmall
-                  ?.copyWith(fontWeight: FontWeight.bold),
+      body: eventosAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, stack) => Center(child: Text('Erro ao carregar: $err')),
+        data: (eventos) => EventlyEventsPanel(
+          eventos: eventos,
+          title: 'Olá, $nomeUsuario 👋',
+          description: 'Selecione um evento para ver suas barracas.',
+          actionLabel: 'Ver minhas barracas',
+          onRefresh: () async {
+            ref.invalidate(meusEventosVendedorProvider);
+          },
+          onOpen: (evento) => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => BarracasDoVendedorView(evento: evento),
             ),
-            const SizedBox(height: 4),
-            Text(
-              'Selecione um evento para ver suas barracas.',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: eventosAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (err, stack) =>
-                    Center(child: Text('Erro ao carregar: $err')),
-                data: (eventos) {
-                  if (eventos.isEmpty) {
-                    return const Center(
-                      child: Text(
-                        'Você ainda não foi vinculado a nenhum evento.',
-                      ),
-                    );
-                  }
-
-                  return RefreshIndicator(
-                    onRefresh: () async =>
-                        ref.invalidate(meusEventosVendedorProvider),
-                    child: ListView.builder(
-                      itemCount: eventos.length,
-                      itemBuilder: (context, index) {
-                        final evento = eventos[index];
-                        return Card(
-                          elevation: 1,
-                          margin: const EdgeInsets.symmetric(vertical: 6),
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: Theme.of(context)
-                                  .colorScheme
-                                  .primary
-                                  .withOpacity(0.1),
-                              child: Icon(
-                                Icons.event,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                            ),
-                            title: Text(
-                              evento.nome,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            subtitle: Text(
-                              evento.local.isEmpty
-                                  ? 'Sem local definido'
-                                  : evento.local,
-                            ),
-                            trailing: const Icon(Icons.chevron_right),
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      BarracasDoVendedorView(evento: evento),
-                                ),
-                              );
-                            },
-                          ),
-                        );
-                      },
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -203,7 +137,7 @@ class BarracasDoVendedorView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final barracasAsync = ref.watch(
-      barracasDoEventoVendedorProvider(evento.id!),
+      barracasDoEventoVendedorProvider(evento.id),
     );
 
     return EventlyScaffold(
@@ -212,47 +146,34 @@ class BarracasDoVendedorView extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Erro ao carregar: $err')),
         data: (barracas) {
-          if (barracas.isEmpty) {
-            return const Center(
-              child: Text('Você não tem barracas neste evento.'),
-            );
-          }
-
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
+          return EventlyPanelGrid(
+            title: 'Suas barracas',
+            subtitle:
+                'Selecione uma barraca para acessar os produtos e vender.',
+            icon: Icons.storefront_outlined,
+            emptyTitle: 'Nenhuma barraca por aqui',
+            emptyMessage: 'Você não tem barracas vinculadas neste evento.',
             itemCount: barracas.length,
             itemBuilder: (context, index) {
               final barraca = barracas[index];
-              return Card(
-                elevation: 1,
-                margin: const EdgeInsets.symmetric(vertical: 6),
-                child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: Theme.of(context).colorScheme.primary
-                        .withOpacity(0.1),
-                    child: Icon(
-                      Icons.store,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                  ),
-                  title: Text(
-                    barraca.nome,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Text(
-                    barraca.tipo.isEmpty ? 'Sem categoria' : barraca.tipo,
-                  ),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            ProdutosDaBarracaVendedorView(barraca: barraca),
+              return EventlyPanelCard(
+                icon: Icons.storefront_outlined,
+                title: barraca.nome,
+                details: [
+                  barraca.tipo.isEmpty ? 'Sem categoria' : barraca.tipo,
+                ],
+                actionLabel: 'Ver produtos',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ProdutosDaBarracaVendedorView(
+                        barraca: barraca,
+                        nomeEvento: evento.nome,
                       ),
-                    );
-                  },
-                ),
+                    ),
+                  );
+                },
               );
             },
           );
@@ -265,8 +186,13 @@ class BarracasDoVendedorView extends ConsumerWidget {
 // --- TELA 3: PRODUTOS DA BARRACA (somente leitura) ---
 class ProdutosDaBarracaVendedorView extends ConsumerStatefulWidget {
   final Barraca barraca;
+  final String nomeEvento;
 
-  const ProdutosDaBarracaVendedorView({super.key, required this.barraca});
+  const ProdutosDaBarracaVendedorView({
+    super.key,
+    required this.barraca,
+    required this.nomeEvento,
+  });
 
   @override
   ConsumerState<ProdutosDaBarracaVendedorView> createState() =>
@@ -438,6 +364,21 @@ class _ProdutosDaBarracaVendedorViewState
     return EventlyScaffold(
       appBar: AppBar(
         title: Text(widget.barraca.nome),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(30),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Tooltip(
+              message: 'Evento: ${widget.nomeEvento}',
+              child: Text(
+                'Evento: ${widget.nomeEvento}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ),
+          ),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.history),
@@ -460,19 +401,18 @@ class _ProdutosDaBarracaVendedorViewState
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Erro: $err')),
         data: (produtos) {
-          if (produtos.isEmpty) {
-            return const Center(
-              child: Text('Nenhum produto cadastrado para esta barraca.'),
-            );
-          }
-
           final total = _calcularTotal(produtos);
 
           return Column(
             children: [
               Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.all(16),
+                child: EventlyPanelGrid(
+                  title: 'Monte a venda.',
+                  subtitle: 'Escolha os produtos e ajuste as quantidades para começar.',
+                  icon: Icons.shopping_bag_outlined,
+                  emptyTitle: 'Nenhum produto por aqui',
+                  emptyMessage:
+                      'Os produtos cadastrados nesta barraca aparecerão aqui.',
                   itemCount: produtos.length,
                   itemBuilder: (context, index) {
                     final produto = produtos[index];
@@ -562,11 +502,12 @@ class _ProdutosDaBarracaVendedorViewState
                   padding: const EdgeInsets.all(16.0),
                   child: SizedBox(
                     width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
+                    child: ElevatedButton.icon(
                       onPressed: () => _abrirCheckout(total),
-                      child: Text(
+                      icon: const Icon(Icons.shopping_cart_checkout_rounded),
+                      label: Text(
                         'Finalizar Venda - R\$ ${total.toStringAsFixed(2)}',
+                        textAlign: TextAlign.center,
                       ),
                     ),
                   ),

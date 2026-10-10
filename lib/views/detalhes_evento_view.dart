@@ -961,6 +961,7 @@ class DetalhesEventoView extends ConsumerWidget {
                           MaterialPageRoute(
                             builder: (context) => DetalhesBarracaView(
                               barraca: item,
+                              nomeEvento: evento.nome,
                               somenteLeitura: evento.encerrado,
                             ),
                           ),

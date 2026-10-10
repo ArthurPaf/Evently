@@ -400,7 +400,11 @@ class _MinhaCarteiraViewState extends ConsumerState<MinhaCarteiraView> {
                         '+',
                       ),
                       'venda' => (
-                        t.estornada ? 'Compra estornada' : 'Compra',
+                        t.estornada
+                            ? 'Compra estornada'
+                            : t.valorEstornado > 0
+                            ? 'Compra com estorno parcial'
+                            : 'Compra',
                         Icons.remove_circle_outline,
                         Colors.red,
                         '-',

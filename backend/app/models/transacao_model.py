@@ -2,10 +2,20 @@ import enum
 import uuid
 from datetime import datetime
 from sqlalchemy import (
-    Column, Integer, Float, String, DateTime, ForeignKey, Enum, Boolean, UniqueConstraint
+    Column, Integer, Float, String, DateTime, ForeignKey, Enum, Boolean, UniqueConstraint, Table
 )
 from sqlalchemy.orm import relationship
 from app.database import Base
+
+
+# Liga cada item devolvido à linha original, preservando quantidade e preço da venda.
+# create_all cria esta tabela também em bancos existentes, sem alterar suas colunas.
+itens_estorno = Table(
+    "itens_estorno",
+    Base.metadata,
+    Column("item_estorno_id", Integer, ForeignKey("itens_transacao.id", ondelete="CASCADE"), primary_key=True),
+    Column("item_venda_id", Integer, ForeignKey("itens_transacao.id", ondelete="CASCADE"), nullable=False, index=True),
+)
 
 
 class TipoTransacao(str, enum.Enum):
@@ -69,7 +79,14 @@ class Transacao(Base):
     itens = relationship(
         "ItemTransacao", back_populates="transacao", cascade="all, delete-orphan"
     )
-    estorno_de = relationship("Transacao", remote_side=[id])
+    estorno_de = relationship("Transacao", remote_side=[id], back_populates="estornos")
+    estornos = relationship("Transacao", back_populates="estorno_de")
+
+    @property
+    def valor_estornado(self):
+        if self.tipo != TipoTransacao.VENDA:
+            return 0.0
+        return sum(e.valor_total for e in self.estornos if e.tipo == TipoTransacao.ESTORNO)
 
     @property
     def nome_cliente(self):
@@ -89,6 +106,19 @@ class ItemTransacao(Base):
 
     transacao = relationship("Transacao", back_populates="itens")
     produto = relationship("Produto")
+    estornos = relationship(
+        "ItemTransacao",
+        secondary=itens_estorno,
+        primaryjoin=id == itens_estorno.c.item_venda_id,
+        secondaryjoin=id == itens_estorno.c.item_estorno_id,
+    )
+
+    @property
+    def quantidade_estornada(self):
+        # Estornos totais antigos não tinham itens; o indicador da venda os cobre.
+        if self.transacao.tipo == TipoTransacao.VENDA and self.transacao.estornada:
+            return self.quantidade
+        return sum(item.quantidade for item in self.estornos)
 
     @property
     def nome_produto(self):

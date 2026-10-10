@@ -10,13 +10,14 @@ from app.models import (
     ItemTransacao, TipoTransacao, Produto, Usuario,
 )
 from app.permissions import usuario_gerencia_evento
+from app.models.transacao_model import itens_estorno
 from app.controllers.transacao_controller import (
     realizar_recarga, realizar_venda, estornar_venda, realizar_reembolso,
 )
 from app.relatorio_utils import gerar_relatorio_pdf
 from app.relatorio_excel_utils import gerar_relatorio_excel
 from app.schemas.carteira_schema import (
-    RecargaCreate, VendaCreate, ReembolsoCreate, TransacaoResponse,
+    RecargaCreate, VendaCreate, ReembolsoCreate, TransacaoResponse, EstornoCreate,
 )
 
 router = APIRouter(tags=["Transações"])
@@ -107,6 +108,7 @@ def listar_vendas_da_barraca(
 )
 def estornar_transacao(
     transacao_id: int,
+    dados: EstornoCreate | None = None,
     db: Session = Depends(get_db),
     usuario: dict = Depends(get_usuario_atual),
 ):
@@ -128,7 +130,7 @@ def estornar_transacao(
     if not pode_estornar:
         raise HTTPException(status_code=403, detail="Sem permissão para estornar esta venda.")
 
-    return estornar_venda(db, transacao_id, realizado_por_id=usuario["id"])
+    return estornar_venda(db, transacao_id, realizado_por_id=usuario["id"], dados=dados)
 
 
 # --- REEMBOLSO DE SALDO (organizador dono ou administrador vinculado ao evento) ---
@@ -159,15 +161,30 @@ def criar_reembolso(
 
 # --- DASHBOARD (exclusivo do organizador dono — administrador não vê dados financeiros) ---
 
+def _totais_estornados(db: Session):
+    return (
+        db.query(
+            Transacao.estorno_de_id.label("venda_id"),
+            func.sum(Transacao.valor_total).label("valor"),
+        )
+        .filter(Transacao.tipo == TipoTransacao.ESTORNO)
+        .group_by(Transacao.estorno_de_id)
+        .subquery()
+    )
+
+
 def _calcular_vendas_por_vendedor(db: Session, evento_id: int) -> list:
+    estornos = _totais_estornados(db)
+    valor_liquido = Transacao.valor_total - func.coalesce(estornos.c.valor, 0.0)
     vendas = (
         db.query(
             Usuario.id,
             Usuario.nome,
             func.count(Transacao.id),
-            func.sum(Transacao.valor_total),
+            func.sum(valor_liquido),
         )
         .select_from(Transacao)
+        .outerjoin(estornos, estornos.c.venda_id == Transacao.id)
         .join(Carteira, Transacao.carteira_id == Carteira.id)
         .join(Usuario, Transacao.realizado_por_id == Usuario.id)
         .filter(
@@ -177,7 +194,7 @@ def _calcular_vendas_por_vendedor(db: Session, evento_id: int) -> list:
             Transacao.estornada == False,  # noqa: E712
         )
         .group_by(Usuario.id, Usuario.nome)
-        .order_by(func.sum(Transacao.valor_total).desc(), Usuario.id)
+        .order_by(func.sum(valor_liquido).desc(), Usuario.id)
         .all()
     )
     return [
@@ -188,8 +205,11 @@ def _calcular_vendas_por_vendedor(db: Session, evento_id: int) -> list:
 
 
 def _calcular_dashboard(db: Session, evento_id: int) -> dict:
+    estornos = _totais_estornados(db)
+    valor_liquido = Transacao.valor_total - func.coalesce(estornos.c.valor, 0.0)
     base_vendas = (
         db.query(Transacao)
+        .outerjoin(estornos, estornos.c.venda_id == Transacao.id)
         .join(Carteira, Transacao.carteira_id == Carteira.id)
         .filter(
             Carteira.evento_id == evento_id,
@@ -199,7 +219,7 @@ def _calcular_dashboard(db: Session, evento_id: int) -> dict:
     )
 
     total_vendido = base_vendas.with_entities(
-        func.coalesce(func.sum(Transacao.valor_total), 0.0)
+        func.coalesce(func.sum(valor_liquido), 0.0)
     ).scalar()
     numero_transacoes = base_vendas.count()
 
@@ -217,12 +237,25 @@ def _calcular_dashboard(db: Session, evento_id: int) -> dict:
         .count()
     )
 
+    unidades_estornadas = (
+        db.query(
+            itens_estorno.c.item_venda_id,
+            func.sum(ItemTransacao.quantidade).label("quantidade"),
+        )
+        .select_from(itens_estorno)
+        .join(ItemTransacao, ItemTransacao.id == itens_estorno.c.item_estorno_id)
+        .group_by(itens_estorno.c.item_venda_id)
+        .subquery()
+    )
+    quantidade_liquida = ItemTransacao.quantidade - func.coalesce(unidades_estornadas.c.quantidade, 0)
     produtos_mais_vendidos = (
         db.query(
             Produto.nome,
-            func.sum(ItemTransacao.quantidade).label("quantidade_total"),
-            func.sum(ItemTransacao.quantidade * ItemTransacao.preco_unitario).label("valor_total"),
+            func.sum(quantidade_liquida).label("quantidade_total"),
+            func.sum(quantidade_liquida * ItemTransacao.preco_unitario).label("valor_total"),
         )
+        .select_from(ItemTransacao)
+        .outerjoin(unidades_estornadas, unidades_estornadas.c.item_venda_id == ItemTransacao.id)
         .join(Transacao, ItemTransacao.transacao_id == Transacao.id)
         .join(Carteira, Transacao.carteira_id == Carteira.id)
         .join(Produto, ItemTransacao.produto_id == Produto.id)
@@ -232,7 +265,8 @@ def _calcular_dashboard(db: Session, evento_id: int) -> dict:
             Transacao.estornada == False,  # noqa: E712
         )
         .group_by(Produto.nome)
-        .order_by(func.sum(ItemTransacao.quantidade).desc())
+        .having(func.sum(quantidade_liquida) > 0)
+        .order_by(func.sum(quantidade_liquida).desc())
         .limit(10)
         .all()
     )
@@ -241,9 +275,11 @@ def _calcular_dashboard(db: Session, evento_id: int) -> dict:
     vendas_por_barraca = (
         db.query(
             Barraca.nome,
-            func.coalesce(func.sum(Transacao.valor_total), 0.0).label("valor_total"),
+            func.coalesce(func.sum(valor_liquido), 0.0).label("valor_total"),
         )
+        .select_from(Barraca)
         .join(Transacao, Transacao.barraca_id == Barraca.id)
+        .outerjoin(estornos, estornos.c.venda_id == Transacao.id)
         .join(Carteira, Transacao.carteira_id == Carteira.id)
         .filter(
             Carteira.evento_id == evento_id,
@@ -263,8 +299,10 @@ def _calcular_dashboard(db: Session, evento_id: int) -> dict:
     vendas_por_periodo_raw = (
         db.query(
             periodo_expr.label("periodo"),
-            func.coalesce(func.sum(Transacao.valor_total), 0.0).label("valor_total"),
+            func.coalesce(func.sum(valor_liquido), 0.0).label("valor_total"),
         )
+        .select_from(Transacao)
+        .outerjoin(estornos, estornos.c.venda_id == Transacao.id)
         .join(Carteira, Transacao.carteira_id == Carteira.id)
         .filter(
             Carteira.evento_id == evento_id,

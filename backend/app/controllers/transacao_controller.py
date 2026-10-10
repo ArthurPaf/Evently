@@ -1,4 +1,5 @@
 from typing import Optional
+from decimal import Decimal
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from app.models import Carteira, Transacao, ItemTransacao, TipoTransacao, Produto, Barraca, Evento
@@ -145,14 +146,13 @@ def realizar_venda(db: Session, barraca_id: int, dados, vendedor_id: int) -> Tra
     return transacao
 
 
-def estornar_venda(db: Session, transacao_id: int, realizado_por_id: int) -> Transacao:
-    """
-    Reverte uma venda: credita o valor de volta na carteira do cliente.
-    A venda original NUNCA é apagada nem alterada em seu valor — apenas
-    marcada como estornada — mantendo o histórico imutável de operações.
-    O estorno em si é um NOVO registro, para auditoria completa.
-    """
-    venda = db.query(Transacao).filter(Transacao.id == transacao_id).first()
+def estornar_venda(db: Session, transacao_id: int, realizado_por_id: int, dados=None) -> Transacao:
+    """Devolve apenas as unidades escolhidas, sem modificar os itens originais."""
+    # Serializa estornos da mesma venda e recarrega o estado lido pela autorização.
+    venda = (
+        db.query(Transacao).filter(Transacao.id == transacao_id)
+        .populate_existing().with_for_update().first()
+    )
     if not venda:
         raise HTTPException(status_code=404, detail="Transação não encontrada.")
     if venda.tipo != TipoTransacao.VENDA:
@@ -160,26 +160,65 @@ def estornar_venda(db: Session, transacao_id: int, realizado_por_id: int) -> Tra
     if venda.estornada:
         raise HTTPException(status_code=400, detail="Esta venda já foi estornada.")
 
+    itens_venda = {item.id: item for item in venda.itens}
+    restantes = {
+        item.id: item.quantidade - item.quantidade_estornada for item in venda.itens
+    }
+    if dados is None:
+        quantidades = {item_id: qtd for item_id, qtd in restantes.items() if qtd > 0}
+    else:
+        quantidades = {}
+        for item in dados.itens:
+            if item.item_id not in itens_venda:
+                raise HTTPException(status_code=400, detail="Produto não pertence a esta venda.")
+            if item.item_id in quantidades:
+                raise HTTPException(status_code=400, detail="Item repetido no pedido de estorno.")
+            if item.quantidade <= 0 or item.quantidade > restantes[item.item_id]:
+                raise HTTPException(status_code=400, detail="Quantidade maior que as unidades disponíveis para estorno.")
+            quantidades[item.item_id] = item.quantidade
+
+    if not quantidades and (dados is not None or itens_venda):
+        raise HTTPException(status_code=400, detail="Não há unidades para estornar.")
+
+    valor = sum(
+        (Decimal(str(itens_venda[item_id].preco_unitario)) * qtd
+         for item_id, qtd in quantidades.items()),
+        Decimal("0"),
+    )
+    # Compatibilidade com vendas antigas sem detalhamento de itens.
+    if not itens_venda:
+        valor = Decimal(str(venda.valor_total)) - Decimal(str(venda.valor_estornado))
+
     carteira = (
         db.query(Carteira)
         .filter(Carteira.id == venda.carteira_id)
+        .populate_existing()
         .with_for_update()
         .first()
     )
     if not carteira:
         raise HTTPException(status_code=404, detail="Carteira não encontrada.")
 
-    carteira.saldo_digital += venda.valor_total
-    venda.estornada = True
+    carteira.saldo_digital = float(Decimal(str(carteira.saldo_digital)) + valor)
+    venda.estornada = all(quantidades.get(item_id, 0) == qtd for item_id, qtd in restantes.items())
 
     estorno = Transacao(
         carteira_id=venda.carteira_id,
         tipo=TipoTransacao.ESTORNO,
-        valor_total=venda.valor_total,
+        valor_total=float(valor),
         barraca_id=venda.barraca_id,
         realizado_por_id=realizado_por_id,
-        estorno_de_id=venda.id,
+        estorno_de=venda,
     )
+    for item_id, qtd in quantidades.items():
+        original = itens_venda[item_id]
+        devolvido = ItemTransacao(
+            produto_id=original.produto_id,
+            quantidade=qtd,
+            preco_unitario=original.preco_unitario,
+        )
+        estorno.itens.append(devolvido)
+        original.estornos.append(devolvido)
     db.add(estorno)
     db.commit()
     db.refresh(estorno)

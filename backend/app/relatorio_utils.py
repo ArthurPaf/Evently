@@ -83,7 +83,7 @@ def gerar_relatorio_pdf(nome_evento: str, dados: dict) -> bytes:
 
     elementos.append(Paragraph("Vendedores que Mais Venderam", subtitulo_style))
     elementos.append(Paragraph(
-        "Ordenado pelo valor vendido. Vendas estornadas não são contabilizadas.", styles["Normal"]
+        "Ordenado pelo valor vendido, já descontando os estornos totais e parciais.", styles["Normal"]
     ))
     vendedores = dados.get("vendas_por_vendedor", [])
     if vendedores:

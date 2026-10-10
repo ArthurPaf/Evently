@@ -41,11 +41,23 @@ class VendaCreate(BaseModel):
     itens: List[ItemVendaInput]
 
 
+class ItemEstornoInput(BaseModel):
+    item_id: int = Field(gt=0, strict=True)
+    quantidade: int = Field(gt=0, strict=True)
+
+
+class EstornoCreate(BaseModel):
+    # Sem corpo continua significando estorno total, para compatibilidade.
+    itens: List[ItemEstornoInput] = Field(min_length=1)
+
+
 class ItemVendaResponse(BaseModel):
+    id: int
     produto_id: int
     nome_produto: Optional[str] = None
     quantidade: int
     preco_unitario: float
+    quantidade_estornada: int = 0
 
     class Config:
         from_attributes = True
@@ -58,6 +70,7 @@ class TransacaoResponse(BaseModel):
     data_hora: datetime
     barraca_id: Optional[int] = None
     estornada: bool = False
+    valor_estornado: float = 0.0
     estorno_de_id: Optional[int] = None
     nome_cliente: Optional[str] = None
     itens: List[ItemVendaResponse] = []
