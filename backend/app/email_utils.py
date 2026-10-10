@@ -1,25 +1,72 @@
-import os
-import smtplib
-import ssl
+import base64
+import json
 import logging
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.mime.image import MIMEImage
-from email.mime.application import MIMEApplication
+import os
+from html import escape
 from io import BytesIO
+from urllib.error import HTTPError
+from urllib.request import Request, urlopen
 
 logger = logging.getLogger("evently_backend")
 
-SMTP_HOST = os.environ.get("SMTP_HOST", "smtp.gmail.com")
-SMTP_PORT = int(os.environ.get("SMTP_PORT", "465"))
-SMTP_USER = os.environ.get("SMTP_USER")
-SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")
-SMTP_FROM_NAME = os.environ.get("SMTP_FROM_NAME", "Evently")
+BREVO_API_KEY = os.environ.get("BREVO_API_KEY")
+BREVO_SENDER_EMAIL = os.environ.get("BREVO_SENDER_EMAIL")
+BREVO_SENDER_NAME = os.environ.get("BREVO_SENDER_NAME", "Evently")
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:5000")
+BREVO_API_URL = "https://api.brevo.com/v3/smtp/email"
+
+
+def _enviar_email_brevo(destinatario: str, assunto: str, html: str, anexos=None) -> bool:
+    """Solicita o envio pela Brevo via HTTPS; não interrompe a requisição em caso de falha."""
+    if not BREVO_API_KEY or not BREVO_SENDER_EMAIL:
+        logger.warning("Brevo não configurada: BREVO_API_KEY ou BREVO_SENDER_EMAIL ausente.")
+        return False
+
+    payload = {
+        "sender": {"name": BREVO_SENDER_NAME, "email": BREVO_SENDER_EMAIL},
+        "to": [{"email": destinatario}],
+        "subject": assunto,
+        "htmlContent": html,
+    }
+    if anexos:
+        payload["attachment"] = anexos
+
+    requisicao = Request(
+        BREVO_API_URL,
+        data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+        headers={
+            "api-key": BREVO_API_KEY,
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        },
+        method="POST",
+    )
+
+    try:
+        with urlopen(requisicao, timeout=25) as resposta:
+            resultado = json.loads(resposta.read().decode("utf-8"))
+        logger.info(
+            "Brevo aceitou o e-mail para %s (messageId: %s)",
+            destinatario,
+            resultado.get("messageId", "indisponível"),
+        )
+        return True
+    except HTTPError as erro:
+        detalhe = erro.read().decode("utf-8", errors="replace")[:500]
+        logger.error(
+            "Brevo recusou o envio para %s (HTTP %s): %s",
+            destinatario,
+            erro.code,
+            detalhe,
+        )
+    except Exception:
+        logger.exception("Falha na comunicação com a Brevo ao enviar para %s", destinatario)
+    return False
 
 
 def _gerar_qr_code_bytes(conteudo: str) -> bytes:
     import qrcode
+
     img = qrcode.make(conteudo)
     buffer = BytesIO()
     img.save(buffer, format="PNG")
@@ -27,15 +74,10 @@ def _gerar_qr_code_bytes(conteudo: str) -> bytes:
 
 
 def _gerar_pdf_cartao(qr_bytes: bytes, nome_cliente: str, nome_evento: str, codigo: str) -> bytes:
-    """
-    Gera um PDF com o QR Code e o código do cartão virtual, para o cliente
-    salvar/imprimir e usar mesmo sem internet ou sem conseguir abrir o app.
-    (O vendedor, na hora da venda, ainda precisa de conexão para validar
-    e debitar o saldo — isso não muda.)
-    """
+    """Gera o mesmo cartão virtual em PDF usado no Evently."""
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.units import cm
-    from reportlab.pdfgen import canvas
+    from reportlab.lib.pdfgen import canvas
     from reportlab.lib.utils import ImageReader
 
     buffer = BytesIO()
@@ -44,10 +86,8 @@ def _gerar_pdf_cartao(qr_bytes: bytes, nome_cliente: str, nome_evento: str, codi
 
     c.setFont("Helvetica-Bold", 20)
     c.drawCentredString(largura / 2, altura - 4 * cm, "Cartão Virtual - Evently")
-
     c.setFont("Helvetica", 14)
     c.drawCentredString(largura / 2, altura - 5.2 * cm, nome_evento)
-
     c.setFont("Helvetica", 12)
     c.drawCentredString(largura / 2, altura - 6 * cm, f"Titular: {nome_cliente}")
 
@@ -59,126 +99,86 @@ def _gerar_pdf_cartao(qr_bytes: bytes, nome_cliente: str, nome_evento: str, codi
 
     c.setFont("Helvetica-Bold", 16)
     c.drawCentredString(largura / 2, y_qr - 1 * cm, f"Código: {codigo}")
-
     c.setFont("Helvetica-Oblique", 10)
     c.drawCentredString(
-        largura / 2, y_qr - 2 * cm,
-        "Guarde este cartão. Apresente-o nas barracas mesmo sem conexão à internet.",
+        largura / 2,
+        y_qr - 2 * cm,
+        "Guarde este cartão. Apresente nas barracas mesmo sem conexão à internet.",
     )
 
     c.showPage()
     c.save()
-    buffer.seek(0)
     return buffer.getvalue()
 
 
 def enviar_email_recuperacao_senha(destinatario: str, nome_usuario: str, link_redefinicao: str) -> None:
+    """Envia link de recuperação pela API HTTPS da Brevo."""
+    nome_seguro = escape(nome_usuario)
+    link_seguro = escape(link_redefinicao, quote=True)
+    html = f"""
+    <html>
+      <body style="font-family:Arial,sans-serif;">
+        <h2>Olá, {nome_seguro}!</h2>
+        <p>Recebemos uma solicitação para redefinir a senha da sua conta no Evently.</p>
+        <p><a href="{link_seguro}"
+              style="background-color:#6A1B9A;color:white;padding:10px 20px;
+                     text-decoration:none;border-radius:6px;display:inline-block;">
+              Redefinir minha senha
+           </a></p>
+        <p style="color:#888;font-size:12px;">
+          Este link expira em 30 minutos. Se você não solicitou essa alteração,
+          pode ignorar este e-mail com segurança — sua senha não será alterada.
+        </p>
+      </body>
+    </html>
     """
-    Envia o link de redefinição de senha por e-mail. Assim como o cartão
-    virtual, uma falha aqui nunca deve travar o fluxo — só é logada.
-    """
-    if not SMTP_USER or not SMTP_PASSWORD:
-        logger.warning(
-            "Envio de e-mail não configurado (SMTP_USER/SMTP_PASSWORD ausentes). "
-            f"Recuperação de senha de {destinatario} não foi enviada."
-        )
-        return
-
-    try:
-        mensagem = MIMEMultipart("alternative")
-        mensagem["Subject"] = "Recuperação de senha - Evently"
-        mensagem["From"] = f"{SMTP_FROM_NAME} <{SMTP_USER}>"
-        mensagem["To"] = destinatario
-
-        html = f"""
-        <html>
-          <body style="font-family: Arial, sans-serif;">
-            <h2>Olá, {nome_usuario}!</h2>
-            <p>Recebemos uma solicitação para redefinir a senha da sua conta no Evently.</p>
-            <p>
-              <a href="{link_redefinicao}"
-                 style="background-color: #6A1B9A; color: white; padding: 10px 20px;
-                        text-decoration: none; border-radius: 6px; display: inline-block;">
-                Redefinir minha senha
-              </a>
-            </p>
-            <p style="color: #888; font-size: 12px;">
-              Este link expira em 30 minutos. Se você não solicitou essa alteração,
-              pode ignorar este e-mail com segurança — sua senha não será alterada.
-            </p>
-          </body>
-        </html>
-        """
-        mensagem.attach(MIMEText(html, "html"))
-
-        contexto = ssl.create_default_context()
-        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, context=contexto) as servidor:
-            servidor.login(SMTP_USER, SMTP_PASSWORD)
-            servidor.sendmail(SMTP_USER, destinatario, mensagem.as_string())
-
-        logger.info(f"E-mail de recuperação de senha enviado para {destinatario}")
-    except Exception as e:
-        logger.error(f"Falha ao enviar recuperação de senha para {destinatario}: {str(e)}", exc_info=True)
+    _enviar_email_brevo(destinatario, "Recuperação de senha - Evently", html)
 
 
 def enviar_cartao_virtual(destinatario: str, nome_cliente: str, nome_evento: str, codigo: str) -> None:
-    """
-    Envia por e-mail o cartão virtual (QR Code + código) do cliente para um evento.
-    Uma falha de envio NUNCA deve travar o fluxo do usuário: qualquer erro aqui é
-    apenas logado, e o cliente continua podendo usar o QR Code direto no app.
-    """
-    if not SMTP_USER or not SMTP_PASSWORD:
-        logger.warning(
-            "Envio de e-mail não configurado (SMTP_USER/SMTP_PASSWORD ausentes). "
-            f"Cartão virtual de {destinatario} não foi enviado."
-        )
-        return
-
+    """Envia cartão virtual com QR Code PNG e PDF anexados pela API HTTPS da Brevo."""
     try:
         qr_bytes = _gerar_qr_code_bytes(codigo)
-
-        mensagem = MIMEMultipart("related")
-        mensagem["Subject"] = f"Seu cartão virtual - {nome_evento}"
-        mensagem["From"] = f"{SMTP_FROM_NAME} <{SMTP_USER}>"
-        mensagem["To"] = destinatario
+        anexos = [
+            {
+                "name": "qrcode.png",
+                "content": base64.b64encode(qr_bytes).decode("ascii"),
+            }
+        ]
+        try:
+            pdf_bytes = _gerar_pdf_cartao(qr_bytes, nome_cliente, nome_evento, codigo)
+            anexos.append(
+                {
+                    "name": "cartao_virtual_evently.pdf",
+                    "content": base64.b64encode(pdf_bytes).decode("ascii"),
+                }
+            )
+        except Exception:
+            logger.exception("Não foi possível gerar o PDF do cartão virtual.")
 
         html = f"""
         <html>
-          <body style="font-family: Arial, sans-serif;">
-            <h2>Olá, {nome_cliente}!</h2>
-            <p>Seu cartão virtual para o evento <strong>{nome_evento}</strong> foi gerado com sucesso.</p>
-            <p>Apresente o QR Code abaixo nas barracas de consumo, ou informe o código manualmente:</p>
-            <p style="font-size: 20px; font-weight: bold; letter-spacing: 2px;">{codigo}</p>
-            <img src="cid:qrcode_cartao" width="200" height="200" />
-            <p style="color: #888; font-size: 12px;">Este saldo é válido apenas dentro deste evento.</p>
+          <body style="font-family:Arial,sans-serif;">
+            <h2>Olá, {escape(nome_cliente)}!</h2>
+            <p>Seu cartão virtual para o evento
+               <strong>{escape(nome_evento)}</strong> foi gerado com sucesso.</p>
+            <p>Seu código para as barracas:</p>
+            <p style="font-size:20px;font-weight:bold;letter-spacing:2px;">
+              {escape(codigo)}
+            </p>
+            <p>O QR Code está anexado como imagem PNG. O cartão completo
+               está disponível em PDF, quando a geração do PDF for concluída.</p>
+            <p style="color:#888;font-size:12px;">
+              Este saldo é válido apenas dentro deste evento.
+            </p>
           </body>
         </html>
         """
-        mensagem.attach(MIMEText(html, "html"))
-
-        imagem = MIMEImage(qr_bytes)
-        imagem.add_header("Content-ID", "<qrcode_cartao>")
-        imagem.add_header("Content-Disposition", "inline", filename="qrcode.png")
-        mensagem.attach(imagem)
-
-        # Anexa também um PDF do cartão, para uso sem internet / impressão
-        try:
-            pdf_bytes = _gerar_pdf_cartao(qr_bytes, nome_cliente, nome_evento, codigo)
-            anexo_pdf = MIMEApplication(pdf_bytes, _subtype="pdf")
-            anexo_pdf.add_header(
-                "Content-Disposition", "attachment", filename="cartao_virtual_evently.pdf"
-            )
-            mensagem.attach(anexo_pdf)
-        except Exception as e:
-            # Se a geração do PDF falhar por qualquer motivo (ex: reportlab
-            # não instalado), o e-mail ainda é enviado com o QR Code inline.
-            logger.warning(f"Não foi possível anexar o PDF do cartão: {str(e)}")
-
-        contexto = ssl.create_default_context()
-        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, context=contexto) as servidor:
-            servidor.login(SMTP_USER, SMTP_PASSWORD)
-            servidor.sendmail(SMTP_USER, destinatario, mensagem.as_string())
-
-        logger.info(f"Cartão virtual enviado com sucesso para {destinatario}")
-    except Exception as e:
-        logger.error(f"Falha ao enviar cartão virtual para {destinatario}: {str(e)}", exc_info=True)
+        _enviar_email_brevo(
+            destinatario,
+            f"Seu cartão virtual - {nome_evento}",
+            html,
+            anexos=anexos,
+        )
+    except Exception:
+        logger.exception("Falha ao preparar cartão virtual para %s", destinatario)
