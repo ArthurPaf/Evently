@@ -1,10 +1,11 @@
 import 'dart:convert';
+import '../config/api_config.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import '../models/evento_model.dart';
 
-const String baseUrl = 'http://127.0.0.1:8000';
+const String baseUrl = ApiConfig.baseUrl;
 const storage = FlutterSecureStorage();
 
 final eventosProvider = AsyncNotifierProvider<EventosNotifier, List<Evento>>(() {

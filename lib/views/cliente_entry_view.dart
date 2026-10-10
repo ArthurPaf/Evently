@@ -1,3 +1,5 @@
+import 'package:flutter_application/providers/evento_provider.dart' as ApiConfig;
+
 import '../widgets/evently_scaffold.dart';
 
 import 'dart:convert';
@@ -11,7 +13,7 @@ import '../providers/auth_provider.dart';
 import 'painel_cliente_view.dart'; // reaproveita a MinhaCarteiraView
 import 'esqueci_senha_view.dart';
 
-const String _baseUrl = 'http://127.0.0.1:8000';
+const String _baseUrl = ApiConfig.baseUrl;
 
 class ClienteEntryView extends ConsumerStatefulWidget {
   final int eventoId;

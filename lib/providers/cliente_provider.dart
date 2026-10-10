@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter_application/providers/evento_provider.dart' as ApiConfig;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
@@ -6,7 +7,7 @@ import '../models/evento_model.dart';
 import '../models/carteira_model.dart';
 import '../models/transacao_model.dart';
 
-const String _baseUrl = 'http://127.0.0.1:8000';
+const String _baseUrl = ApiConfig.baseUrl;
 
 class ClienteService {
   final http.Client _client;

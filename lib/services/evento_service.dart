@@ -1,9 +1,10 @@
 import 'dart:convert';
+import 'package:flutter_application/providers/evento_provider.dart' as ApiConfig;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import '../models/evento_model.dart';
 
-const String baseUrl = 'http://127.0.0.1:8000';
+const String baseUrl = ApiConfig.baseUrl;
 const storage = FlutterSecureStorage();
 
 // Função auxiliar para injetar o Token JWT nos cabeçalhos

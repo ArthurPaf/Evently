@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter_application/providers/evento_provider.dart' as ApiConfig;
 import 'package:flutter_application/services/barraca_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -76,7 +77,7 @@ class AuthState {
 // 2. Notifier
 class AuthNotifier extends Notifier<AuthState> {
   final _storage = const FlutterSecureStorage();
-  final String _baseUrl = 'http://127.0.0.1:8000';
+  final String _baseUrl = ApiConfig.baseUrl;
 
   @override
   AuthState build() {

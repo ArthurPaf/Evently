@@ -1,14 +1,14 @@
 import 'dart:convert';
 import 'package:flutter_application/providers/auth_provider.dart';
+import 'package:flutter_application/providers/evento_provider.dart' as ApiConfig;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import '../models/barraca_model.dart';
 import 'dart:developer' as developer;
 
-// DICA: Use 'http://10.0.2.2:8000' se estiver rodando no Emulador Android.
-// Use 'http://127.0.0.1:8000' para Web/Windows ou IP local para celular físico.
-const String _baseUrl = 'http://127.0.0.1:8000'; 
+
+const String _baseUrl = ApiConfig.baseUrl;
 
 class BarracaService {
   final http.Client _client;

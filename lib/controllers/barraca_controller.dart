@@ -1,9 +1,10 @@
 import 'dart:convert';
+import 'package:flutter_application/providers/evento_provider.dart' as ApiConfig;
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class BarracaController {
-  final String baseUrl = 'http://127.0.0.1:8000';
+  final String baseUrl = ApiConfig.baseUrl;
 
   Future<bool> criarBarraca(int eventoId, String nome, String tipo) async {
     final prefs = await SharedPreferences.getInstance();

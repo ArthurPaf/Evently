@@ -1,3 +1,5 @@
+import 'package:flutter_application/providers/evento_provider.dart' as ApiConfig;
+
 import '../widgets/evently_scaffold.dart';
 
 import 'dart:convert';
@@ -5,7 +7,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-const String _baseUrl = 'http://127.0.0.1:8000';
+const String _baseUrl = ApiConfig.baseUrl;
 
 class EsqueciSenhaView extends StatefulWidget {
   final int? eventoId; // presente quando aberto a partir da tela do cliente
